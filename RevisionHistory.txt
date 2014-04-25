@@ -1,0 +1,12 @@
+File Comparison Sampler
+
+Version 1.1.4910; June 11, 2013
+	- Added a new syntax option that supports specifying a dataset name
+		- The first parameter must be the word DMS
+		- The second parameter is the dataset name
+			- For example: FileComparisonSampler.exe DMS QC_Shew_13_04_Run-02_10Jun13_Methow_13-05-25
+		- The program will lookup the dataset folder path and archive folder path for the specified dataset using V_Dataset_Folder_Paths in DMS5 on Gigasax
+	- Now showing sub-progress for each file if the comparison takes longer than 5 seconds
+
+Version 1.0.4860; April 23, 2013
+	- Initial release
