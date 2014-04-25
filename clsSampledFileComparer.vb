@@ -15,11 +15,13 @@
 ' in compliance with the License.  You may obtain a copy of the License at 
 ' http://www.apache.org/licenses/LICENSE-2.0
 
+Imports System.IO
+
 Public Class clsSampledFileComparer
 	Inherits clsProcessFilesBaseClass
 
 	Public Sub New()
-		MyBase.mFileDate = "June 11, 2013"
+		MyBase.mFileDate = "April 25, 2014"
 		InitializeLocalVariables()
 	End Sub
 
@@ -88,7 +90,7 @@ Public Class clsSampledFileComparer
 			Return intBytes.ToString()
 		Else
 			Dim dblBytes As Double = intBytes
-			Dim lstPrefixes As Generic.List(Of String) = New Generic.List(Of String) From {String.Empty, "KB", "MB", "GB", "TB", "PB"}
+			Dim lstPrefixes As List(Of String) = New List(Of String) From {String.Empty, "KB", "MB", "GB", "TB", "PB"}
 			Dim intPrefixIndex As Integer = 0
 
 			While dblBytes >= 10000 AndAlso intPrefixIndex < lstPrefixes.Count
@@ -150,19 +152,19 @@ Public Class clsSampledFileComparer
 
 			If String.IsNullOrWhiteSpace(strInputFilePathBase) Then
 				ShowErrorMessage("Base input file path is empty")
-				MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.InvalidInputFilePath)
+				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
 				Return False
 			ElseIf String.IsNullOrWhiteSpace(strInputFilePathToCompare) Then
 				ShowErrorMessage("Input file path to compare is empty")
-				MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.InvalidInputFilePath)
+				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
 				Return False
 			End If
 
-			LogMessage("Comparing " & System.IO.Path.GetFileName(strInputFilePathBase))
-			Console.Write("Comparing " & System.IO.Path.GetFileName(strInputFilePathBase))
+			LogMessage("Comparing " & Path.GetFileName(strInputFilePathBase))
+			Console.Write("Comparing " & Path.GetFileName(strInputFilePathBase))
 
-			Dim fiFilePathBase As IO.FileInfo = New IO.FileInfo(strInputFilePathBase)
-			Dim fiFilePathToCompare As IO.FileInfo = New IO.FileInfo(strInputFilePathToCompare)
+			Dim fiFilePathBase As FileInfo = New FileInfo(strInputFilePathBase)
+			Dim fiFilePathToCompare As FileInfo = New FileInfo(strInputFilePathToCompare)
 			Dim strComparisonResult As String = String.Empty
 
 			If intNumberOfSamples * intSampleSizeBytes > fiFilePathBase.Length Then
@@ -211,17 +213,17 @@ Public Class clsSampledFileComparer
 	''' <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
 	''' <returns>True if the files match; otherwise false</returns>
 	''' <remarks></remarks>
-	Public Function CompareFilesComplete(ByVal fiFilePathBase As IO.FileInfo, ByVal fiFilePathToCompare As IO.FileInfo, ByRef strComparisonResult As String) As Boolean
+	Public Function CompareFilesComplete(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String) As Boolean
 
 		If Not FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, strComparisonResult) Then
 			Return False
 		End If
 
-		Dim blnFilesMatch As Boolean = False
+		Dim blnFilesMatch As Boolean
 
-		Using brBaseFile As IO.BinaryReader = New IO.BinaryReader(New IO.FileStream(fiFilePathBase.FullName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite))
-			Using brComparisonFile As IO.BinaryReader = New IO.BinaryReader(New IO.FileStream(fiFilePathToCompare.FullName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite))
-				blnFilesMatch = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResult, -1, -1, "Full comparison", System.DateTime.UtcNow)
+		Using brBaseFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			Using brComparisonFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				blnFilesMatch = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResult, -1, -1, "Full comparison", DateTime.UtcNow)
 			End Using
 		End Using
 
@@ -242,13 +244,13 @@ Public Class clsSampledFileComparer
 	''' <returns>True if the files match; otherwise false</returns>
 	''' <remarks></remarks>
 	Protected Function CompareFileSection(
-	 ByVal brBaseFile As IO.BinaryReader,
-	 ByVal brComparisonFile As IO.BinaryReader,
+	 ByVal brBaseFile As BinaryReader,
+	 ByVal brComparisonFile As BinaryReader,
 	 ByRef strComparisonResult As String,
 	 ByVal intStartOffset As Int64,
 	 ByVal intSampleSizeBytes As Int64,
 	 ByVal strSampleDescription As String,
-	 ByRef dtLastStatusTime As System.DateTime) As Boolean
+	 ByRef dtLastStatusTime As DateTime) As Boolean
 
 		Const CHUNK_SIZE_BYTES As Integer = 1024 * 1024 * 50	' 50 MB
 
@@ -316,8 +318,8 @@ Public Class clsSampledFileComparer
 					End If
 				Next
 
-				If System.DateTime.UtcNow.Subtract(dtLastStatusTime).TotalSeconds >= 5 Then
-					dtLastStatusTime = System.DateTime.UtcNow
+				If DateTime.UtcNow.Subtract(dtLastStatusTime).TotalSeconds >= 5 Then
+					dtLastStatusTime = DateTime.UtcNow
 
 					Dim dblPercentComplete As Double = (brBaseFile.BaseStream.Position - intStartOffset) / (intEndOffset - intStartOffset) * 100
 
@@ -351,7 +353,7 @@ Public Class clsSampledFileComparer
 	''' <param name="intSampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
 	''' <returns>True if the files match; otherwise false</returns>
 	''' <remarks></remarks>
-	Public Function CompareFilesSampled(ByVal fiFilePathBase As IO.FileInfo, ByVal fiFilePathToCompare As IO.FileInfo, ByRef strComparisonResult As String, ByVal intNumberOfSamples As Integer, ByVal intSampleSizeBytes As Int64) As Boolean
+	Public Function CompareFilesSampled(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String, ByVal intNumberOfSamples As Integer, ByVal intSampleSizeBytes As Int64) As Boolean
 
 		Dim blnMatchAtStart As Boolean
 		Dim blnMatchAtEnd As Boolean
@@ -366,21 +368,19 @@ Public Class clsSampledFileComparer
 		Dim intStartOffset As Int64
 		Dim intBytesExamined As Int64 = 0
 
-		Dim dtLastStatusTime As System.DateTime = System.DateTime.UtcNow()
-
 		If Not FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, strComparisonResult) Then
 			Return False
 		End If
 
-		Using brBaseFile As IO.BinaryReader = New IO.BinaryReader(New IO.FileStream(fiFilePathBase.FullName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite))
-			Using brComparisonFile As IO.BinaryReader = New IO.BinaryReader(New IO.FileStream(fiFilePathToCompare.FullName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite))
+		Using brBaseFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			Using brComparisonFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 
 				intStartOffset = 0
 				intBytesExamined += intSampleSizeBytes
 
 				intSampleNumber += 1
 				strSampleDescription = "Sample " & intSampleNumber & " of " & intNumberOfSamples.ToString
-				dtLastStatusTime = System.DateTime.UtcNow()
+				Dim dtLastStatusTime = DateTime.UtcNow()
 
 				blnMatchAtStart = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResultAtStart, intStartOffset, intSampleSizeBytes, strSampleDescription, dtLastStatusTime)
 
@@ -462,10 +462,10 @@ Public Class clsSampledFileComparer
 
 		Try
 
-			strInputFolderPath1 = strInputFolderPath1.TrimEnd(IO.Path.DirectorySeparatorChar)
-			strInputFolderPath2 = strInputFolderPath2.TrimEnd(IO.Path.DirectorySeparatorChar)
+			strInputFolderPath1 = strInputFolderPath1.TrimEnd(Path.DirectorySeparatorChar)
+			strInputFolderPath2 = strInputFolderPath2.TrimEnd(Path.DirectorySeparatorChar)
 
-			Dim diBaseFolder As IO.DirectoryInfo = New IO.DirectoryInfo(strInputFolderPath1)
+			Dim diBaseFolder As DirectoryInfo = New DirectoryInfo(strInputFolderPath1)
 
 			If Not diBaseFolder.Exists Then
 				ShowErrorMessage("Base folder to compare not found: " & strInputFolderPath1)
@@ -473,7 +473,7 @@ Public Class clsSampledFileComparer
 				Return False
 			End If
 
-			Dim diComparisonFolder As IO.DirectoryInfo = New IO.DirectoryInfo(strInputFolderPath2)
+			Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strInputFolderPath2)
 
 			If Not diComparisonFolder.Exists Then
 				ShowErrorMessage("Comparison folder not found: " & strInputFolderPath2)
@@ -487,18 +487,18 @@ Public Class clsSampledFileComparer
 			Console.WriteLine()
 			ShowParameters()
 
-			For Each fiFile In diBaseFolder.GetFiles("*.*", IO.SearchOption.AllDirectories)
+			For Each fiFile In diBaseFolder.GetFiles("*.*", SearchOption.AllDirectories)
 				' Look for the corresponding item in the comparison folder
 
-				Dim fiComparisonFile As IO.FileInfo
+				Dim fiComparisonFile As FileInfo
 
 				If fiFile.Directory.FullName = diBaseFolder.FullName Then
-					fiComparisonFile = New IO.FileInfo(IO.Path.Combine(strInputFolderPath2, fiFile.Name))
+					fiComparisonFile = New FileInfo(Path.Combine(strInputFolderPath2, fiFile.Name))
 				Else
 
 					Dim strSubdirectoryAddon As String
 					strSubdirectoryAddon = fiFile.Directory.FullName.Substring(diBaseFolder.FullName.Length + 1)
-					fiComparisonFile = New IO.FileInfo(IO.Path.Combine(strInputFolderPath2, strSubdirectoryAddon, fiFile.Name))
+					fiComparisonFile = New FileInfo(Path.Combine(strInputFolderPath2, strSubdirectoryAddon, fiFile.Name))
 				End If
 
 				If Not fiComparisonFile.Exists Then
@@ -548,7 +548,7 @@ Public Class clsSampledFileComparer
 
 	End Function
 
-	Public Function FileLengthsMatch(ByVal fiFilePathBase As IO.FileInfo, ByVal fiFilePathToCompare As IO.FileInfo, ByRef strComparisonResult As String) As Boolean
+	Public Function FileLengthsMatch(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String) As Boolean
 
 		If Not fiFilePathBase.Exists() Then
 			strComparisonResult = "Base file to compare not found: " & fiFilePathBase.FullName
@@ -572,8 +572,8 @@ Public Class clsSampledFileComparer
 
 		Dim strErrorMessage As String
 
-		If MyBase.ErrorCode = clsProcessFilesBaseClass.eProcessFilesErrorCodes.LocalizedError Or _
-		   MyBase.ErrorCode = clsProcessFilesBaseClass.eProcessFilesErrorCodes.NoError Then
+		If MyBase.ErrorCode = eProcessFilesErrorCodes.LocalizedError Or _
+		   MyBase.ErrorCode = eProcessFilesErrorCodes.NoError Then
 			Select Case mLocalErrorCode
 				Case eFileComparerErrorCodes.NoError
 					strErrorMessage = ""
@@ -612,12 +612,11 @@ Public Class clsSampledFileComparer
 				Return True
 			End If
 
-			If Not System.IO.File.Exists(strParameterFilePath) Then
+			If Not File.Exists(strParameterFilePath) Then
 				' See if strParameterFilePath points to a file in the same directory as the application
-				strParameterFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), _
-					System.IO.Path.GetFileName(strParameterFilePath))
-				If Not System.IO.File.Exists(strParameterFilePath) Then
-					MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.ParameterFileNotFound)
+				strParameterFilePath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), Path.GetFileName(strParameterFilePath))
+				If Not File.Exists(strParameterFilePath) Then
+					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.ParameterFileNotFound)
 					Return False
 				End If
 			End If
@@ -627,7 +626,7 @@ Public Class clsSampledFileComparer
 					If MyBase.ShowMessages Then
 						Console.WriteLine("The node '<section name=""" & OPTIONS_SECTION & """> was not found in the parameter file: " & strParameterFilePath)
 					End If
-					MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.InvalidParameterFile)
+					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile)
 					Return False
 				Else
 					' Me.SettingName = objSettingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
@@ -662,9 +661,9 @@ Public Class clsSampledFileComparer
 			strStorageServerFolderPath = String.Empty
 			strArchiveFolderPath = String.Empty
 
-			Using Cn As New System.Data.SqlClient.SqlConnection(ConnectionString)
+			Using Cn As New SqlClient.SqlConnection(ConnectionString)
 
-				Dim SqlStr As New System.Text.StringBuilder()
+				Dim SqlStr As New Text.StringBuilder()
 
 				SqlStr.Append(" SELECT Dataset_Folder_Path, Archive_Folder_Path ")
 				SqlStr.Append(" FROM V_Dataset_Folder_Paths")
@@ -672,9 +671,9 @@ Public Class clsSampledFileComparer
 
 				Cn.Open()
 
-				Using command As System.Data.SqlClient.SqlCommand = New System.Data.SqlClient.SqlCommand(SqlStr.ToString, Cn)
+				Using command As SqlClient.SqlCommand = New SqlClient.SqlCommand(SqlStr.ToString, Cn)
 
-					Using reader As System.Data.SqlClient.SqlDataReader = command.ExecuteReader()
+					Using reader As SqlClient.SqlDataReader = command.ExecuteReader()
 
 						' Call Read to read the first row
 						If reader.Read() Then
@@ -741,8 +740,8 @@ Public Class clsSampledFileComparer
 
 			If Not LoadParameterFileSettings(strParameterFilePath) Then
 				ShowErrorMessage("Parameter file load error: " & strParameterFilePath)
-				If MyBase.ErrorCode = clsProcessFilesBaseClass.eProcessFilesErrorCodes.NoError Then
-					MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.InvalidParameterFile)
+				If MyBase.ErrorCode = eProcessFilesErrorCodes.NoError Then
+					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile)
 				End If
 				Return False
 			End If
@@ -753,7 +752,7 @@ Public Class clsSampledFileComparer
 				Return False
 			End If
 
-			Dim diBaseFolder As IO.DirectoryInfo = New IO.DirectoryInfo(strInputFilePath)
+			Dim diBaseFolder As DirectoryInfo = New DirectoryInfo(strInputFilePath)
 
 			If diBaseFolder.Exists Then
 
@@ -764,7 +763,7 @@ Public Class clsSampledFileComparer
 					Return False
 				End If
 
-				Dim diComparisonFolder As IO.DirectoryInfo = New IO.DirectoryInfo(strOutputFolderPath)
+				Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strOutputFolderPath)
 				If Not diComparisonFolder.Exists Then
 					ShowErrorMessage("Base item is a folder (" & strInputFilePath & "), but the comparison folder was not found: " & strOutputFolderPath)
 					SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
@@ -776,7 +775,7 @@ Public Class clsSampledFileComparer
 			Else
 				' Comparing files
 
-				Dim fiBaseFile As IO.FileInfo = New IO.FileInfo(strInputFilePath)
+				Dim fiBaseFile As FileInfo = New FileInfo(strInputFilePath)
 
 				If Not fiBaseFile.Exists Then
 					ShowErrorMessage("Base file to compare not found: " & strInputFilePath)
@@ -790,14 +789,14 @@ Public Class clsSampledFileComparer
 					Return False
 				End If
 
-				Dim diComparisonFolder As IO.DirectoryInfo = New IO.DirectoryInfo(strOutputFolderPath)
+				Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strOutputFolderPath)
 				Dim strComparisonFilePath As String
 
 				If diComparisonFolder.Exists Then
 					' Will look for a file in the comparison folder with the same name as the input file
-					strComparisonFilePath = IO.Path.Combine(diComparisonFolder.FullName, IO.Path.GetFileName(strInputFilePath))
+					strComparisonFilePath = Path.Combine(diComparisonFolder.FullName, Path.GetFileName(strInputFilePath))
 				Else
-					Dim fiComparisonFile As IO.FileInfo = New IO.FileInfo(strOutputFolderPath)
+					Dim fiComparisonFile As FileInfo = New FileInfo(strOutputFolderPath)
 					If Not fiComparisonFile.Exists Then
 						ShowErrorMessage("Base item is a file (" & strInputFilePath & "), but the comparison item was not found: " & strOutputFolderPath)
 						SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
@@ -832,11 +831,11 @@ Public Class clsSampledFileComparer
 			mLocalErrorCode = eNewErrorCode
 
 			If eNewErrorCode = eFileComparerErrorCodes.NoError Then
-				If MyBase.ErrorCode = clsProcessFilesBaseClass.eProcessFilesErrorCodes.LocalizedError Then
-					MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.NoError)
+				If MyBase.ErrorCode = eProcessFilesErrorCodes.LocalizedError Then
+					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.NoError)
 				End If
 			Else
-				MyBase.SetBaseClassErrorCode(clsProcessFilesBaseClass.eProcessFilesErrorCodes.LocalizedError)
+				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.LocalizedError)
 			End If
 		End If
 

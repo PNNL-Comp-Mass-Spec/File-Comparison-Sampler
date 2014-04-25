@@ -1,5 +1,8 @@
 File Comparison Sampler
 
+Version 1.1.5228; April 25, 2014
+	- Resharper code cleanup
+
 Version 1.1.4910; June 11, 2013
 	- Added a new syntax option that supports specifying a dataset name
 		- The first parameter must be the word DMS
