@@ -20,7 +20,7 @@ Option Strict On
 Imports System.IO
 
 Module modMain
-	Public Const PROGRAM_DATE As String = "April 25, 2014"
+	Public Const PROGRAM_DATE As String = "August 22, 2014"
 
 	Private mInputFileOrFolderPath As String
 	Private mComparisonFileOrFolderPath As String

@@ -38,8 +38,8 @@ Use /L to log messages to a file.  Use the optional /Q switch will suppress all 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 Copyright 2013, Battelle Memorial Institute.  All Rights Reserved.
 
-E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-Website: http://ncrr.pnl.gov/ or http://omics.pnl.gov
+E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
+Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov
 -------------------------------------------------------------------------------
 
 Licensed under the Apache License, Version 2.0; you may not use this file except 
