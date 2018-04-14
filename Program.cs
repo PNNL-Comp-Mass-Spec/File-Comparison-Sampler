@@ -83,6 +83,7 @@ namespace FileComparisonSampler
 
                 if (!commandLineParser.ParseCommandLine())
                 {
+                    ShowProgramHelp();
                     return -1;
                 }
 
@@ -297,22 +298,23 @@ namespace FileComparisonSampler
                 Console.WriteLine();
                 Console.WriteLine("Program syntax 1:");
                 Console.WriteLine(" " + exeName + " FilePath1 FilePath2");
-                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes] [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]");
+                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
+                Console.WriteLine(" [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]");
                 Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath]");
                 Console.WriteLine();
                 Console.WriteLine("Program syntax 2:");
                 Console.WriteLine(" " + exeName + " DirectoryPath1 DirectoryPath2");
-                Console.WriteLine(" [/N:NumberOfSamples]  [/Bytes:SampleSizeBytes]");
+                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
                 Console.WriteLine(" [/L] [/LogFolder]");
                 Console.WriteLine();
                 Console.WriteLine("Program syntax 3:");
                 Console.WriteLine(" " + exeName + " FileMatchSpec DirectoryPathToExamine");
-                Console.WriteLine(" [/N:NumberOfSamples]  [/Bytes:SampleSizeBytes]");
+                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
                 Console.WriteLine(" [/L] [/LogFolder]");
                 Console.WriteLine();
                 Console.WriteLine("Program syntax 4:");
                 Console.WriteLine(" " + exeName + " DMS DatasetNameToCheck");
-                Console.WriteLine(" [/N:NumberOfSamples]  [/Bytes:SampleSizeBytes]");
+                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
                 Console.WriteLine(" [/L] [/LogFolder]");
                 Console.WriteLine();
                 Console.WriteLine("Use Syntax 1 to compare two files; in this case the filenames cannot have wildcards");
