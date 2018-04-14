@@ -195,6 +195,7 @@ namespace FileComparisonSampler
                 "MB",
                 "GB",
                 "L",
+                "Log",
                 "LogFolder"
             };
 
@@ -249,6 +250,11 @@ namespace FileComparisonSampler
                 }
 
                 if (commandLineParser.RetrieveValueForParameter("L", out value))
+                {
+                    mLogMessagesToFile = true;
+                    if (!string.IsNullOrEmpty(value))
+                        mLogFilePath = value;
+                } else if (commandLineParser.RetrieveValueForParameter("Log", out value))
                 {
                     mLogMessagesToFile = true;
                     if (!string.IsNullOrEmpty(value))
