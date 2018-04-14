@@ -76,8 +76,8 @@ namespace FileComparisonSampler
 
             try
             {
-                var blnProceed = false;
-                int intReturnCode;
+                var proceed = false;
+                int returnCode;
 
                 var commandLineParser = new clsParseCommandLine();
 
@@ -89,10 +89,10 @@ namespace FileComparisonSampler
 
                 if (SetOptionsUsingCommandLineParameters(commandLineParser))
                 {
-                    blnProceed = true;
+                    proceed = true;
                 }
 
-                if (!blnProceed ||
+                if (!proceed ||
                     commandLineParser.NeedToShowHelp ||
                     commandLineParser.ParameterCount + commandLineParser.NonSwitchParameterCount == 0 ||
                     mInputFileOrDirectoryPath.Length == 0)
@@ -120,27 +120,27 @@ namespace FileComparisonSampler
                     return -1;
                 }
 
-                bool blnSuccess;
+                bool success;
                 if (string.Equals(mInputFileOrDirectoryPath, "DMS", StringComparison.OrdinalIgnoreCase) &&
                     mComparisonFileOrDirectoryPath.IndexOf("\\", StringComparison.Ordinal) < 0)
                 {
                     // DMS Dataset
-                    blnSuccess = mProcessingClass.ProcessDMSDataset(mComparisonFileOrDirectoryPath);
+                    success = mProcessingClass.ProcessDMSDataset(mComparisonFileOrDirectoryPath);
                 }
                 else
                 {
                     // Comparing two files or two directories
-                    blnSuccess = mProcessingClass.ProcessFilesWildcard(mInputFileOrDirectoryPath, mComparisonFileOrDirectoryPath);
+                    success = mProcessingClass.ProcessFilesWildcard(mInputFileOrDirectoryPath, mComparisonFileOrDirectoryPath);
                 }
 
-                if (blnSuccess)
+                if (success)
                 {
-                    intReturnCode = 0;
+                    returnCode = 0;
                 }
                 else
                 {
-                    intReturnCode = (int)mProcessingClass.ErrorCode;
-                    if (intReturnCode != 0)
+                    returnCode = (int)mProcessingClass.ErrorCode;
+                    if (returnCode != 0)
                     {
                         ShowErrorMessage("Error while processing: " + mProcessingClass.GetErrorMessage());
                     }
@@ -149,7 +149,7 @@ namespace FileComparisonSampler
 
                 DisplayProgressPercent(mLastProgressReportValue, true);
 
-                return intReturnCode;
+                return returnCode;
             }
             catch (Exception ex)
             {
@@ -159,20 +159,20 @@ namespace FileComparisonSampler
 
         }
 
-        static void DisplayProgressPercent(int intPercentComplete, bool blnAddCarriageReturn)
+        static void DisplayProgressPercent(int percentComplete, bool addCarriageReturn)
         {
-            if (blnAddCarriageReturn)
+            if (addCarriageReturn)
             {
                 Console.WriteLine();
             }
 
-            if (intPercentComplete > 100)
+            if (percentComplete > 100)
             {
-                intPercentComplete = 100;
+                percentComplete = 100;
             }
 
-            Console.Write("Processing: " + intPercentComplete + "% ");
-            if (blnAddCarriageReturn)
+            Console.Write("Processing: " + percentComplete + "% ");
+            if (addCarriageReturn)
             {
                 Console.WriteLine();
             }
@@ -187,7 +187,7 @@ namespace FileComparisonSampler
         private static bool SetOptionsUsingCommandLineParameters(clsParseCommandLine commandLineParser)
         {
             // Returns True if no problems; otherwise, returns false
-            var lstValidParameters = new List<string>
+            var validParameters = new List<string>
             {
                 "N",
                 "Bytes",
@@ -201,10 +201,10 @@ namespace FileComparisonSampler
             try
             {
                 // Make sure no invalid parameters are present
-                if (commandLineParser.InvalidParametersPresent(lstValidParameters))
+                if (commandLineParser.InvalidParametersPresent(validParameters))
                 {
                     ShowErrorMessage("Invalid commmand line parameters",
-                                     (from item in commandLineParser.InvalidParameters(lstValidParameters) select "/" + item).ToList());
+                                     (from item in commandLineParser.InvalidParameters(validParameters) select "/" + item).ToList());
                     return false;
                 }
 
@@ -219,12 +219,12 @@ namespace FileComparisonSampler
                 mInputFileOrDirectoryPath = commandLineParser.RetrieveNonSwitchParameter(0);
                 mComparisonFileOrDirectoryPath = commandLineParser.RetrieveNonSwitchParameter(1);
 
-                if (commandLineParser.RetrieveValueForParameter("N", out var strValue))
+                if (commandLineParser.RetrieveValueForParameter("N", out var value))
                 {
-                    if (int.TryParse(strValue, out var intValue))
-                        mNumberOfSamples = intValue;
+                    if (int.TryParse(value, out var parsedInt))
+                        mNumberOfSamples = parsedInt;
                     else
-                        ShowErrorMessage("Non-numeric value: /N:" + strValue);
+                        ShowErrorMessage("Non-numeric value: /N:" + value);
                 }
 
                 var byteParams = new List<KeyValuePair<string, long>> {
@@ -237,30 +237,30 @@ namespace FileComparisonSampler
                 foreach (var item in byteParams)
                 {
 
-                    if (commandLineParser.RetrieveValueForParameter(item.Key, out strValue))
+                    if (commandLineParser.RetrieveValueForParameter(item.Key, out value))
                     {
-                        if (long.TryParse(strValue, out var intValue64))
-                            mSampleSizeBytes = intValue64 * item.Value;
+                        if (long.TryParse(value, out var parsedLong))
+                            mSampleSizeBytes = parsedLong * item.Value;
                         else
                             ShowErrorMessage(string.Format(
                                                  "Non-numeric value: /{0}: {1}",
-                                                 item.Key, strValue));
+                                                 item.Key, value));
                     }
                 }
 
-                if (commandLineParser.RetrieveValueForParameter("L", out strValue))
+                if (commandLineParser.RetrieveValueForParameter("L", out value))
                 {
                     mLogMessagesToFile = true;
-                    if (!string.IsNullOrEmpty(strValue))
-                        mLogFilePath = strValue;
+                    if (!string.IsNullOrEmpty(value))
+                        mLogFilePath = value;
                 }
 
-                if (commandLineParser.RetrieveValueForParameter("LogFolder", out strValue))
+                if (commandLineParser.RetrieveValueForParameter("LogFolder", out value))
                 {
                     mLogMessagesToFile = true;
 
-                    if (!string.IsNullOrEmpty(strValue))
-                        mLogFolderPath = strValue;
+                    if (!string.IsNullOrEmpty(value))
+                        mLogFolderPath = value;
 
                 }
 

@@ -106,17 +106,17 @@ namespace FileComparisonSampler
                 return bytes.ToString();
             }
 
-            double dblBytes = bytes;
-            var lstPrefixes = new List<string> {string.Empty, "KB", "MB", "GB", "TB", "PB"};
+            double scaledBytes = bytes;
+            var sizeUnits = new List<string> { string.Empty, "KB", "MB", "GB", "TB", "PB" };
 
-            var intPrefixIndex = 0;
-            while (dblBytes >= 10000 && intPrefixIndex < lstPrefixes.Count)
+            var prefixIndex = 0;
+            while (scaledBytes >= 10000 && prefixIndex < sizeUnits.Count)
             {
-                dblBytes /= 1024;
-                intPrefixIndex++;
+                scaledBytes /= 1024;
+                prefixIndex++;
             }
 
-            return Math.Round(dblBytes, 0).ToString("0") + " " + lstPrefixes[intPrefixIndex];
+            return Math.Round(scaledBytes, 0).ToString("0") + " " + sizeUnits[prefixIndex];
 
         }
 
@@ -163,7 +163,7 @@ namespace FileComparisonSampler
             bool showMessageIfMatch)
         {
             const int FIVE_HUNDRED_MB = 1024 * 1024 * 512;
-            bool blnSuccess;
+            bool success;
 
             try
             {
@@ -197,28 +197,27 @@ namespace FileComparisonSampler
                 }
 
                 ShowMessage("Comparing " + Path.GetFileName(inputFilePathBase));
-                var fiFilePathBase = new FileInfo(inputFilePathBase);
-                var fiFilePathToCompare = new FileInfo(inputFilePathToCompare);
+                var baseFile = new FileInfo(inputFilePathBase);
+                var comparisonFile = new FileInfo(inputFilePathToCompare);
 
-                string strComparisonResult;
+                string comparisonResult;
 
-                if (numberOfSamples * sampleSizeBytes > fiFilePathBase.Length)
+                if (numberOfSamples * sampleSizeBytes > baseFile.Length)
                 {
                     // Do a full comparison
-                    blnSuccess = CompareFilesComplete(fiFilePathBase, fiFilePathToCompare, out strComparisonResult);
+                    success = CompareFilesComplete(baseFile, comparisonFile, out comparisonResult);
                 }
                 else
                 {
-                    blnSuccess = CompareFilesSampled(fiFilePathBase, fiFilePathToCompare, out strComparisonResult, numberOfSamples,
+                    success = CompareFilesSampled(baseFile, comparisonFile, out comparisonResult, numberOfSamples,
                                                      sampleSizeBytes);
                 }
 
-                var pathsCompared = clsPathUtils.CompactPathString(inputFilePathBase) + "  vs. " +
-                                    clsPathUtils.CompactPathString(inputFilePathToCompare);
+                var pathsCompared = inputFilePathBase + "  vs. " + inputFilePathToCompare;
 
-                if (!blnSuccess)
+                if (!success)
                 {
-                    if (string.IsNullOrEmpty(strComparisonResult))
+                    if (string.IsNullOrEmpty(comparisonResult))
                     {
                         LogMessage("Files do not match: " + pathsCompared, eMessageTypeConstants.Warning);
                         Console.WriteLine(" ... *** files do not match ***");
@@ -230,9 +229,9 @@ namespace FileComparisonSampler
                     }
 
                 }
-                else if (showMessageIfMatch && !string.IsNullOrEmpty(strComparisonResult))
+                else if (showMessageIfMatch && !string.IsNullOrEmpty(comparisonResult))
                 {
-                    if (string.IsNullOrEmpty(strComparisonResult))
+                    if (string.IsNullOrEmpty(comparisonResult))
                     {
                         LogMessage("Files match: " + pathsCompared);
                         Console.WriteLine(" ... files match");
@@ -252,61 +251,60 @@ namespace FileComparisonSampler
                 return false;
             }
 
-            return blnSuccess;
+            return success;
         }
 
         /// <summary>
         /// Perform a full byte-by-byte comparison of the two files
         /// </summary>
-        /// <param name="fiFilePathBase"></param>
-        /// <param name="fiFilePathToCompare"></param>
-        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <param name="baseFile"></param>
+        /// <param name="comparisonFile"></param>
+        /// <param name="comparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
         /// <returns>True if the files match; otherwise false</returns>
         /// <remarks></remarks>
-        public bool CompareFilesComplete(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult)
+        public bool CompareFilesComplete(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult)
         {
-            if (!FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, out strComparisonResult))
+            if (!FileLengthsMatch(baseFile, comparisonFile, out comparisonResult))
             {
                 return false;
             }
 
-            using (var brBaseFile = new BinaryReader(new FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            using (var brComparisonFile = new BinaryReader(new FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var baseFileReader = new BinaryReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var comparisonFileReader = new BinaryReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
-                var dtLastStatusTime = DateTime.UtcNow;
-                var blnFilesMatch = CompareFileSection(brBaseFile, brComparisonFile, out strComparisonResult, -1, -1, "Full comparison",
-                                                       ref dtLastStatusTime);
-                return blnFilesMatch;
+                var lastStatusTime = DateTime.UtcNow;
+                var filesMatch = CompareFileSection(baseFileReader, comparisonFileReader, out comparisonResult, -1, -1, "Full comparison", ref lastStatusTime);
+                return filesMatch;
             }
         }
 
         /// <summary>
         /// Perform a full byte-by-byte comparison of a section of two files
         /// </summary>
-        /// <param name="brBaseFile"></param>
-        /// <param name="brComparisonFile"></param>
-        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
-        /// <param name="intStartOffset">File offset to start the comparison; use -1 to specify that the entire file should be read</param>
-        /// <param name="sampleSizeBytes">Number of bytes to compare; ignored if intStartOffset is less than 0</param>
-        /// <param name="strSampleDescription">Description of the current section of the file being compared</param>
-        /// <param name="dtLastStatusTime">The last time that a status message was shown (UTC time)</param>
+        /// <param name="baseFileReader"></param>
+        /// <param name="comparisonFileReader"></param>
+        /// <param name="comparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <param name="startOffset">File offset to start the comparison; use -1 to specify that the entire file should be read</param>
+        /// <param name="sampleSizeBytes">Number of bytes to compare; ignored if startOffset is less than 0</param>
+        /// <param name="sampleDescription">Description of the current section of the file being compared</param>
+        /// <param name="lastStatusTime">The last time that a status message was shown (UTC time)</param>
         /// <returns>True if the files match; otherwise false</returns>
         /// <remarks></remarks>
-        protected bool CompareFileSection(BinaryReader brBaseFile, BinaryReader brComparisonFile, out string strComparisonResult, long intStartOffset,
-                                          long sampleSizeBytes, string strSampleDescription, ref DateTime dtLastStatusTime)
+        protected bool CompareFileSection(BinaryReader baseFileReader, BinaryReader comparisonFileReader, out string comparisonResult, long startOffset,
+                                          long sampleSizeBytes, string sampleDescription, ref DateTime lastStatusTime)
         {
             // 50 MB
             const int CHUNK_SIZE_BYTES = 1024 * 1024 * 50;
 
-            var dblPercentShown = false;
+            var percentShown = false;
             try
             {
-                strComparisonResult = string.Empty;
-                long intEndOffset;
-                if (intStartOffset < 0)
+                comparisonResult = string.Empty;
+                long endOffset;
+                if (startOffset < 0)
                 {
                     // Compare the entire file
-                    intEndOffset = brBaseFile.BaseStream.Length;
+                    endOffset = baseFileReader.BaseStream.Length;
                 }
                 else
                 {
@@ -315,87 +313,88 @@ namespace FileComparisonSampler
                         sampleSizeBytes = 1;
                     }
 
-                    intEndOffset = intStartOffset + sampleSizeBytes;
-                    if (intEndOffset > brBaseFile.BaseStream.Length)
+                    endOffset = startOffset + sampleSizeBytes;
+                    if (endOffset > baseFileReader.BaseStream.Length)
                     {
-                        intEndOffset = brBaseFile.BaseStream.Length;
+                        endOffset = baseFileReader.BaseStream.Length;
                     }
 
-                    if (intStartOffset > 0)
+                    if (startOffset > 0)
                     {
-                        if (intStartOffset > brBaseFile.BaseStream.Length)
+                        if (startOffset > baseFileReader.BaseStream.Length)
                         {
-                            strComparisonResult = "StartOffset is beyond the end of the base file";
+                            comparisonResult = "StartOffset is beyond the end of the base file";
                             return false;
                         }
 
-                        if (intStartOffset > brComparisonFile.BaseStream.Length)
+                        if (startOffset > comparisonFileReader.BaseStream.Length)
                         {
-                            strComparisonResult = "StartOffset is beyond the end of the comparison file";
+                            comparisonResult = "StartOffset is beyond the end of the comparison file";
                             return false;
                         }
 
-                        brBaseFile.BaseStream.Position = intStartOffset;
-                        brComparisonFile.BaseStream.Position = intStartOffset;
+                        baseFileReader.BaseStream.Position = startOffset;
+                        comparisonFileReader.BaseStream.Position = startOffset;
                     }
 
                 }
 
-                while (brBaseFile.BaseStream.Position < brBaseFile.BaseStream.Length &&
-                       brBaseFile.BaseStream.Position < intEndOffset)
+                while (baseFileReader.BaseStream.Position < baseFileReader.BaseStream.Length &&
+                       baseFileReader.BaseStream.Position < endOffset)
                 {
-                    var intOffsetPriorToRead = brBaseFile.BaseStream.Position;
-                    int intBytesToRead;
-                    if (brBaseFile.BaseStream.Position + CHUNK_SIZE_BYTES <= intEndOffset)
+                    var offsetPriorToRead = baseFileReader.BaseStream.Position;
+                    int bytesToRead;
+                    if (baseFileReader.BaseStream.Position + CHUNK_SIZE_BYTES <= endOffset)
                     {
-                        intBytesToRead = CHUNK_SIZE_BYTES;
+                        bytesToRead = CHUNK_SIZE_BYTES;
                     }
                     else
                     {
-                        intBytesToRead = (int)(intEndOffset - brBaseFile.BaseStream.Position);
+                        bytesToRead = (int)(endOffset - baseFileReader.BaseStream.Position);
                     }
 
-                    if (intBytesToRead == 0)
+                    if (bytesToRead == 0)
                     {
                         break;
                     }
 
-                    var bytFile1 = brBaseFile.ReadBytes(intBytesToRead);
-                    var bytFile2 = brComparisonFile.ReadBytes(intBytesToRead);
-                    for (var intIndex = 0; intIndex <= bytFile1.Length - 1; intIndex++)
+                    var bytesFile1 = baseFileReader.ReadBytes(bytesToRead);
+                    var bytesFile2 = comparisonFileReader.ReadBytes(bytesToRead);
+                    for (var index = 0; index <= bytesFile1.Length - 1; index++)
                     {
-                        if (bytFile2[intIndex] != bytFile1[intIndex])
+                        if (bytesFile2[index] != bytesFile1[index])
                         {
-                            strComparisonResult = "Mismatch at offset " + intOffsetPriorToRead + intIndex;
+                            comparisonResult = "Mismatch at offset " + offsetPriorToRead + index;
                             return false;
                         }
 
                     }
 
-                    if (DateTime.UtcNow.Subtract(dtLastStatusTime).TotalSeconds >= 2)
+                    if (DateTime.UtcNow.Subtract(lastStatusTime).TotalSeconds >= 2)
                     {
-                        dtLastStatusTime = DateTime.UtcNow;
-                        var dblPercentComplete = (brBaseFile.BaseStream.Position - intStartOffset) / (double)(intEndOffset - intStartOffset) * 100;
-                        if (dblPercentComplete < 100 || dblPercentShown)
+                        lastStatusTime = DateTime.UtcNow;
+                        var percentComplete = (baseFileReader.BaseStream.Position - startOffset) / (double)(endOffset - startOffset) * 100;
+                        if (!percentShown)
                         {
-                            dblPercentShown = true;
-                            Console.WriteLine("   " + strSampleDescription + ", " + dblPercentComplete.ToString("0.0") + "%");
+                            percentShown = true;
+                            Console.WriteLine();
+                            Console.Write("   " + sampleDescription + ", " + percentComplete.ToString("0.0") + "%");
                         }
                         else
                         {
-                            Console.WriteLine("   " + strSampleDescription);
+                            Console.Write("  " + percentComplete.ToString("0.0") + "%");
                         }
 
                     }
 
                 }
 
-                strComparisonResult = "Files match";
+                comparisonResult = "Files match";
             }
             catch (Exception ex)
             {
-                strComparisonResult = "Error in CompareFileSection";
-                HandleException(strComparisonResult, ex);
+                comparisonResult = "Error in CompareFileSection";
+                HandleException(comparisonResult, ex);
                 return false;
             }
 
@@ -405,231 +404,230 @@ namespace FileComparisonSampler
         /// <summary>
         /// Compares the beginning, end, and optionally one or more middle sections of a file
         /// </summary>
-        /// <param name="fiFilePathBase"></param>
-        /// <param name="fiFilePathToCompare"></param>
-        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <param name="baseFile"></param>
+        /// <param name="comparisonFile"></param>
+        /// <param name="comparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
         /// <returns>True if the files match; otherwise false</returns>
         /// <remarks></remarks>
-        public bool CompareFilesSampled(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult, int numberOfSamples,
+        public bool CompareFilesSampled(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult, int numberOfSamples,
                                         long sampleSizeBytes)
         {
-            var intSampleNumber = 0;
-            long intBytesExamined = 0;
+            var sampleNumber = 0;
+            long bytesExamined = 0;
 
-            if (!FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, out strComparisonResult))
+            if (!FileLengthsMatch(baseFile, comparisonFile, out comparisonResult))
             {
                 return false;
             }
 
-            using (var brBaseFile = new BinaryReader(new FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            using (var brComparisonFile =
-                new BinaryReader(new FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var baseFileReader = new BinaryReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var comparisonFileReader =
+                new BinaryReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
 
-                long intStartOffset = 0;
-                intBytesExamined = intBytesExamined + sampleSizeBytes;
+                long startOffset = 0;
+                bytesExamined = bytesExamined + sampleSizeBytes;
 
-                intSampleNumber++;
-                var strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
-                var dtLastStatusTime = DateTime.UtcNow;
+                sampleNumber++;
+                var sampleDescription = "Sample " + sampleNumber + " of " + numberOfSamples;
+                var lastStatusTime = DateTime.UtcNow;
 
-                var blnMatchAtStart = CompareFileSection(brBaseFile, brComparisonFile, out var strComparisonResultAtStart, intStartOffset,
-                                                         sampleSizeBytes, strSampleDescription, ref dtLastStatusTime);
+                var matchAtStart = CompareFileSection(baseFileReader, comparisonFileReader, out var comparisonResultAtStart, startOffset,
+                                                         sampleSizeBytes, sampleDescription, ref lastStatusTime);
 
                 // Update the start offset to be SampleSizeBytes before the end of the file
-                intStartOffset = fiFilePathBase.Length - sampleSizeBytes;
-                if (intStartOffset < 0)
+                startOffset = baseFile.Length - sampleSizeBytes;
+                if (startOffset < 0)
                 {
-                    intBytesExamined = intBytesExamined + sampleSizeBytes + intStartOffset;
-                    intStartOffset = 0;
+                    bytesExamined = bytesExamined + sampleSizeBytes + startOffset;
+                    startOffset = 0;
                 }
                 else
                 {
-                    intBytesExamined = intBytesExamined + sampleSizeBytes;
+                    bytesExamined = bytesExamined + sampleSizeBytes;
                 }
 
-                intSampleNumber++;
-                strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
+                sampleNumber++;
+                sampleDescription = "Sample " + sampleNumber + " of " + numberOfSamples;
 
-                var blnMatchAtEnd = CompareFileSection(brBaseFile, brComparisonFile, out var strComparisonResultAtEnd, intStartOffset, sampleSizeBytes,
-                                                       strSampleDescription, ref dtLastStatusTime);
+                var matchAtEnd = CompareFileSection(baseFileReader, comparisonFileReader, out var comparisonResultAtEnd, startOffset, sampleSizeBytes,
+                                                    sampleDescription, ref lastStatusTime);
 
-                if (blnMatchAtStart && !blnMatchAtEnd)
+                if (matchAtStart && !matchAtEnd)
                 {
-                    strComparisonResult = "Files match at the beginning but not at the end; " + strComparisonResultAtEnd;
+                    comparisonResult = "Files match at the beginning but not at the end; " + comparisonResultAtEnd;
                     return false;
                 }
 
-                if (blnMatchAtEnd && !blnMatchAtStart)
+                if (matchAtEnd && !matchAtStart)
                 {
-                    strComparisonResult = "Files match at the end but not at the beginning; " + strComparisonResultAtStart;
+                    comparisonResult = "Files match at the end but not at the beginning; " + comparisonResultAtStart;
                     return false;
                 }
 
-                if (numberOfSamples > 2 && fiFilePathBase.Length > sampleSizeBytes * 2)
+                if (numberOfSamples > 2 && baseFile.Length > sampleSizeBytes * 2)
                 {
-                    var intMidSectionSamples = numberOfSamples - 2;
-                    var dblSeekLength = fiFilePathBase.Length / (double)(intMidSectionSamples + 1);
-                    var dblCurrentOffset = dblSeekLength - sampleSizeBytes / 2.0;
+                    var midSectionSamples = numberOfSamples - 2;
+                    var seekLengthDouble = baseFile.Length / (double)(midSectionSamples + 1);
+                    var currentOffsetDouble = seekLengthDouble - sampleSizeBytes / 2.0;
 
-                    while (dblCurrentOffset < fiFilePathBase.Length)
+                    while (currentOffsetDouble < baseFile.Length)
                     {
-                        intStartOffset = (long)Math.Round(dblCurrentOffset, 0);
-                        if (intStartOffset < 0)
+                        startOffset = (long)Math.Round(currentOffsetDouble, 0);
+                        if (startOffset < 0)
                         {
-                            intStartOffset = 0;
+                            startOffset = 0;
                         }
 
-                        intSampleNumber++;
-                        strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
+                        sampleNumber++;
+                        sampleDescription = "Sample " + sampleNumber + " of " + numberOfSamples;
 
-                        var blnMatchInMiddle = CompareFileSection(brBaseFile, brComparisonFile, out strComparisonResult, intStartOffset,
-                                                                  sampleSizeBytes, strSampleDescription, ref dtLastStatusTime);
+                        var matchInMiddle = CompareFileSection(baseFileReader, comparisonFileReader, out comparisonResult, startOffset,
+                                                               sampleSizeBytes, sampleDescription, ref lastStatusTime);
 
-                        if (!blnMatchInMiddle)
+                        if (!matchInMiddle)
                         {
-                            strComparisonResult = "Files match at the beginning and end, but not in the middle; " + strComparisonResult;
+                            comparisonResult = "Files match at the beginning and end, but not in the middle; " + comparisonResult;
                             return false;
                         }
 
-                        dblCurrentOffset = dblCurrentOffset + dblSeekLength;
-                        intBytesExamined = intBytesExamined + sampleSizeBytes;
+                        currentOffsetDouble += seekLengthDouble;
+                        bytesExamined = bytesExamined + sampleSizeBytes;
                     }
 
                 }
             }
 
-
-
-            var dblPercentExamined = intBytesExamined / (double)fiFilePathBase.Length * 100;
-            if (dblPercentExamined > 100)
+            var percentExamined = bytesExamined / (double)baseFile.Length * 100;
+            if (percentExamined > 100)
             {
-                dblPercentExamined = 100;
+                percentExamined = 100;
             }
 
-            strComparisonResult = "Files match (examined " + dblPercentExamined.ToString("0.00") + "% of the file)";
+            comparisonResult = "Files match (examined " + percentExamined.ToString("0.00") + "% of the file)";
             return true;
 
         }
 
         /// <summary>
-        /// Compares each file in folder inputFolderPath1 to files in folder inputFolderPath2
+        /// Compares each file in directory inputDirectoryPath1 to files in directory inputDirectoryPath2
         /// </summary>
-        /// <param name="inputFolderPath1"></param>
-        /// <param name="inputFolderPath2"></param>
+        /// <param name="inputDirectoryPath1"></param>
+        /// <param name="inputDirectoryPath2"></param>
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
-        /// <returns>True if the folders Match; false if they do not match</returns>
+        /// <returns>True if the directories Match; false if they do not match</returns>
         /// <remarks></remarks>
-        public bool CompareFolders(string inputFolderPath1, string inputFolderPath2, int numberOfSamples, long sampleSizeBytes)
+        public bool CompareDirectories(string inputDirectoryPath1, string inputDirectoryPath2, int numberOfSamples, long sampleSizeBytes)
         {
-            var intSourceFilesFound = 0;
-            var intMatchedFileCount = 0;
-            var intMissingFileCount = 0;
-            var intMismatchedFileCount = 0;
+            var sourceFilesFound = 0;
+            var matchedFileCount = 0;
+            var missingFileCount = 0;
+            var mismatchedFileCount = 0;
 
             try
             {
-                inputFolderPath1 = inputFolderPath1.TrimEnd(Path.DirectorySeparatorChar);
-                inputFolderPath2 = inputFolderPath2.TrimEnd(Path.DirectorySeparatorChar);
+                inputDirectoryPath1 = inputDirectoryPath1.TrimEnd(Path.DirectorySeparatorChar);
+                inputDirectoryPath2 = inputDirectoryPath2.TrimEnd(Path.DirectorySeparatorChar);
 
-                var diBaseFolder = new DirectoryInfo(inputFolderPath1);
+                var baseDirectory = new DirectoryInfo(inputDirectoryPath1);
 
-                if (!diBaseFolder.Exists)
+                if (!baseDirectory.Exists)
                 {
-                    ShowErrorMessage("Base folder to compare not found: " + inputFolderPath1);
+                    ShowErrorMessage("Base directory to compare not found: " + inputDirectoryPath1);
                     SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
-                var diComparisonFolder = new DirectoryInfo(inputFolderPath2);
-                if (!diComparisonFolder.Exists)
+                var comparisonDirectory = new DirectoryInfo(inputDirectoryPath2);
+                if (!comparisonDirectory.Exists)
                 {
-                    ShowErrorMessage("Comparison folder not found: " + inputFolderPath2);
+                    ShowErrorMessage("Comparison directory not found: " + inputDirectoryPath2);
                     SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
-                ShowMessage("Comparing folders: " + diBaseFolder.FullName);
-                ShowMessage("               vs. " + diComparisonFolder.FullName);
+                ShowMessage("Comparing directories: ");
+                ShowMessage("    " + baseDirectory.FullName);
+                ShowMessage("vs. " + comparisonDirectory.FullName);
 
                 Console.WriteLine();
                 ShowParameters();
 
-                foreach (var fiFile in diBaseFolder.GetFiles("*.*", SearchOption.AllDirectories))
+                foreach (var baseFile in baseDirectory.GetFiles("*.*", SearchOption.AllDirectories))
                 {
-                    // Look for the corresponding item in the comparison folder
-                    FileInfo fiComparisonFile;
-                    if (fiFile.Directory == null)
+                    // Look for the corresponding item in the comparison directory
+                    FileInfo comparisonFile;
+                    if (baseFile.Directory == null)
                     {
-                        ShowMessage("Cannot determine the parent directory path; skipping " + fiFile.FullName);
+                        ShowMessage("Cannot determine the parent directory path; skipping " + baseFile.FullName);
                         continue;
                     }
 
-                    if (fiFile.Directory.FullName == diBaseFolder.FullName)
+                    if (baseFile.Directory.FullName == baseDirectory.FullName)
                     {
-                        fiComparisonFile = new FileInfo(Path.Combine(inputFolderPath2, fiFile.Name));
+                        comparisonFile = new FileInfo(Path.Combine(inputDirectoryPath2, baseFile.Name));
                     }
                     else
                     {
-                        var strSubdirectoryAddon = fiFile.Directory.FullName.Substring(diBaseFolder.FullName.Length + 1);
-                        fiComparisonFile = new FileInfo(Path.Combine(inputFolderPath2, strSubdirectoryAddon, fiFile.Name));
+                        var subdirectoryAddon = baseFile.Directory.FullName.Substring(baseDirectory.FullName.Length + 1);
+                        comparisonFile = new FileInfo(Path.Combine(inputDirectoryPath2, subdirectoryAddon, baseFile.Name));
                     }
 
-                    if (!fiComparisonFile.Exists)
+                    if (!comparisonFile.Exists)
                     {
-                        ShowMessage("  File " + fiFile.Name + " not found in the comparison folder");
-                        intMissingFileCount++;
+                        ShowMessage("  File " + baseFile.Name + " not found in the comparison directory");
+                        missingFileCount++;
                     }
-                    else if (CompareFiles(fiFile.FullName, fiComparisonFile.FullName, numberOfSamples, sampleSizeBytes, true))
+                    else if (CompareFiles(baseFile.FullName, comparisonFile.FullName, numberOfSamples, sampleSizeBytes, true))
                     {
-                        intMatchedFileCount++;
+                        matchedFileCount++;
                     }
                     else
                     {
-                        intMismatchedFileCount++;
+                        mismatchedFileCount++;
                     }
 
-                    intSourceFilesFound++;
+                    sourceFilesFound++;
                 }
 
             }
             catch (Exception ex)
             {
-                HandleException("Error in CompareFolders", ex);
+                HandleException("Error in CompareDirectories", ex);
                 return false;
             }
 
             Console.WriteLine();
-            if (intSourceFilesFound == 0)
+            if (sourceFilesFound == 0)
             {
-                ShowErrorMessage("Base folder was empty; nothing to compare: " + inputFolderPath1);
+                ShowErrorMessage("Base directory was empty; nothing to compare: " + inputDirectoryPath1);
                 return true;
             }
 
-            if (intMissingFileCount == 0 && intMismatchedFileCount == 0)
+            if (missingFileCount == 0 && mismatchedFileCount == 0)
             {
-                ShowMessage("Folders match; checked " + intSourceFilesFound + " file(s)");
+                ShowMessage("Directories match; checked " + sourceFilesFound + " file(s)");
                 return true;
             }
 
-            if (intMissingFileCount == 0 && intMismatchedFileCount > 0)
+            if (missingFileCount == 0 && mismatchedFileCount > 0)
             {
-                ShowMessage("Folders do not match; Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+                ShowMessage("Directories do not match; Mis-matched file count: " + mismatchedFileCount + "; Matched file count: " + matchedFileCount);
                 return false;
             }
 
-            if (intMissingFileCount > 0)
+            if (missingFileCount > 0)
             {
-                ShowMessage("Comparison folder is missing " + intMissingFileCount + " file(s) that the base folder contains");
-                ShowMessage("Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+                ShowMessage("Comparison directory is missing " + missingFileCount + " file(s) that the base directory contains");
+                ShowMessage("Mis-matched file count: " + mismatchedFileCount + "; Matched file count: " + matchedFileCount);
                 return false;
             }
 
-            Console.WriteLine("Note: unexpected logic encountered in If-Else-EndIf block in CompareFolders");
-            ShowMessage("Folders do not match; Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+            Console.WriteLine("Note: unexpected logic encountered in If-Else-EndIf block in CompareDirectories");
+            ShowMessage("Directories do not match; Mis-matched file count: " + mismatchedFileCount + "; Matched file count: " + matchedFileCount);
             return false;
 
         }
@@ -637,36 +635,36 @@ namespace FileComparisonSampler
         /// <summary>
         /// Compare the size of two files
         /// </summary>
-        /// <param name="fiFilePathBase"></param>
-        /// <param name="fiFilePathToCompare"></param>
-        /// <param name="strComparisonResult"></param>
+        /// <param name="baseFile"></param>
+        /// <param name="comparisonFile"></param>
+        /// <param name="comparisonResult"></param>
         /// <returns>Trueif the sizes match, otherwise false</returns>
-        public bool FileLengthsMatch(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult)
+        public bool FileLengthsMatch(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult)
         {
-            if (!fiFilePathBase.Exists)
+            if (!baseFile.Exists)
             {
-                strComparisonResult = "Base file to compare not found: " + fiFilePathBase.FullName;
+                comparisonResult = "Base file to compare not found: " + baseFile.FullName;
                 return false;
             }
 
-            if (!fiFilePathToCompare.Exists)
+            if (!comparisonFile.Exists)
             {
-                strComparisonResult = "Comparison file not found: " + fiFilePathToCompare.FullName;
+                comparisonResult = "Comparison file not found: " + comparisonFile.FullName;
                 return false;
             }
 
-            if (fiFilePathBase.Length != fiFilePathToCompare.Length)
+            if (baseFile.Length != comparisonFile.Length)
             {
-                strComparisonResult = string.Format("Base file is {0:#,##0.0} KB; comparison file is {1:#,##0.0} KB",
-                                                    fiFilePathBase.Length / 1024.0,
-                                                    fiFilePathToCompare.Length / 1024.0);
+                comparisonResult = string.Format("Base file is {0:#,##0.0} KB; comparison file is {1:#,##0.0} KB",
+                                                 baseFile.Length / 1024.0,
+                                                 comparisonFile.Length / 1024.0);
 
 
 
                 return false;
             }
 
-            strComparisonResult = "File lengths match";
+            comparisonResult = "File lengths match";
             return true;
 
         }
@@ -678,29 +676,29 @@ namespace FileComparisonSampler
         public override string GetErrorMessage()
         {
 
-            string strErrorMessage;
+            string errorMessage;
             if (ErrorCode == eProcessFilesErrorCodes.LocalizedError ||
                 ErrorCode == eProcessFilesErrorCodes.NoError)
             {
                 switch (mLocalErrorCode)
                 {
                     case eFileComparerErrorCodes.NoError:
-                        strErrorMessage = "";
+                        errorMessage = "";
                         break;
                     case eFileComparerErrorCodes.ErrorReadingInputFile:
-                        strErrorMessage = "Error reading input file";
+                        errorMessage = "Error reading input file";
                         break;
                     default:
-                        strErrorMessage = "Unknown error state";
+                        errorMessage = "Unknown error state";
                         break;
                 }
             }
             else
             {
-                strErrorMessage = GetBaseClassErrorMessage();
+                errorMessage = GetBaseClassErrorMessage();
             }
 
-            return strErrorMessage;
+            return errorMessage;
         }
 
         private void InitializeLocalVariables()
@@ -713,7 +711,7 @@ namespace FileComparisonSampler
         private bool LoadParameterFileSettings(string parameterFilePath)
         {
             const string OPTIONS_SECTION = "Options";
-            var objSettingsFile = new XmlSettingsFileAccessor();
+            var settingsFile = new XmlSettingsFileAccessor();
 
             try
             {
@@ -736,9 +734,9 @@ namespace FileComparisonSampler
 
                 }
 
-                if (objSettingsFile.LoadSettings(parameterFilePath))
+                if (settingsFile.LoadSettings(parameterFilePath))
                 {
-                    if (!objSettingsFile.SectionPresent(OPTIONS_SECTION))
+                    if (!settingsFile.SectionPresent(OPTIONS_SECTION))
                     {
                         ShowWarning("The node <section name=\"" + OPTIONS_SECTION + "\"> " +
                                    "was not found in the parameter file: " + parameterFilePath);
@@ -747,7 +745,7 @@ namespace FileComparisonSampler
                         return false;
                     }
 
-                    // Me.SettingName = objSettingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
+                    // Me.SettingName = settingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
 
                 }
 
@@ -761,50 +759,52 @@ namespace FileComparisonSampler
             return true;
         }
 
-        private bool LookupDatasetFolderPaths(string strDatasetName, out string strStorageServerFolderPath, out string strArchiveFolderPath)
+        private bool LookupDatasetDirectoryPaths(string datasetName, out string storageServerDirectoryPath, out string archiveDirectoryPath)
         {
-            return LookupDatasetFolderPaths(strDatasetName, out strStorageServerFolderPath, out strArchiveFolderPath, "Gigasax", "DMS5");
+            return LookupDatasetDirectoryPaths(datasetName, out storageServerDirectoryPath, out archiveDirectoryPath, "Gigasax", "DMS5");
         }
 
-        private bool LookupDatasetFolderPaths(
-            string strDatasetName,
-            out string strStorageServerFolderPath,
-            out string strArchiveFolderPath,
-            string strDMSServer,
-            string strDMSDatabase)
+        private bool LookupDatasetDirectoryPaths(
+            string datasetName,
+            out string storageServerDirectoryPath,
+            out string archiveDirectoryPath,
+            string dmsServer,
+            string dmsDatabase)
         {
 
-            strStorageServerFolderPath = string.Empty;
-            strArchiveFolderPath = string.Empty;
+            storageServerDirectoryPath = string.Empty;
+            archiveDirectoryPath = string.Empty;
 
             try
             {
-                var connectionString = "Data Source=" + strDMSServer + ";Initial Catalog=" + strDMSDatabase + ";Integrated Security=SSPI;";
+                var connectionString = "Data Source=" + dmsServer + ";Initial Catalog=" + dmsDatabase + ";Integrated Security=SSPI;";
 
                 var dbTools = new clsDBTools(connectionString);
 
 
                 var sqlQuery = "SELECT Dataset_Folder_Path, Archive_Folder_Path " +
                                "FROM V_Dataset_Folder_Paths " +
-                               "WHERE (Dataset = '" + strDatasetName + "')";
+                               "WHERE (Dataset = '" + datasetName + "')";
 
-                dbTools.GetQueryResults(sqlQuery, out var lstResults, "LookupDatasetFolderPaths");
+                dbTools.GetQueryResults(sqlQuery, out var queryResults, "LookupDatasetFolderPaths");
 
-                if (lstResults.Count > 0)
+                var sourceViewAndDatabase = dmsDatabase + ".dbo.V_Dataset_Folder_Paths on server " + dmsServer;
+
+                if (queryResults.Count > 0)
                 {
-                    var firstResult = lstResults.First();
+                    var firstResult = queryResults.First();
 
-                    strStorageServerFolderPath = firstResult[0];
-                    strArchiveFolderPath = firstResult[1];
-                    if (string.IsNullOrEmpty(strStorageServerFolderPath))
+                    storageServerDirectoryPath = firstResult[0];
+                    archiveDirectoryPath = firstResult[1];
+                    if (string.IsNullOrEmpty(storageServerDirectoryPath))
                     {
-                        ShowErrorMessage("Dataset '" + strDatasetName + "' has an empty Dataset_Folder_Path " +
-                                         "(using " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths on server " + strDMSServer + ")");
+                        ShowErrorMessage("Dataset '" + datasetName + "' has an empty Dataset_Folder_Path " +
+                                         "(using " + sourceViewAndDatabase + ")");
                     }
-                    else if (string.IsNullOrEmpty(strArchiveFolderPath))
+                    else if (string.IsNullOrEmpty(archiveDirectoryPath))
                     {
-                        ShowErrorMessage("Dataset '" + strDatasetName + "' has an empty Archive_Folder_Path " +
-                                         "(using " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths on server " + strDMSServer + ")");
+                        ShowErrorMessage("Dataset '" + datasetName + "' has an empty Archive_Folder_Path " +
+                                         "(using " + sourceViewAndDatabase + ")");
                     }
                     else
                     {
@@ -814,16 +814,14 @@ namespace FileComparisonSampler
                 }
                 else
                 {
-                    ShowErrorMessage("Dataset '" + strDatasetName + "' " +
-                                     "not found in " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths " +
-                                     "on server " + strDMSServer);
+                    ShowErrorMessage("Dataset '" + datasetName + "' not found in " + sourceViewAndDatabase);
                 }
 
                 return false;
             }
             catch (Exception ex)
             {
-                HandleException("Error in LookupDatasetFolderPaths", ex);
+                HandleException("Error in LookupDatasetDirectoryPaths", ex);
                 return false;
             }
 
@@ -831,31 +829,31 @@ namespace FileComparisonSampler
         }
 
         /// <summary>
-        /// Process a DMS dataset, comparing files in the dataset folder to the archive
+        /// Process a DMS dataset, comparing files in the dataset directory to the archive
         /// ToDo: Update to work with MyEMSL
         /// </summary>
-        /// <param name="strDatasetName"></param>
+        /// <param name="datasetName"></param>
         /// <returns>True if all files match, otherwise false</returns>
-        public bool ProcessDMSDataset(string strDatasetName)
+        public bool ProcessDMSDataset(string datasetName)
         {
-            if (!LookupDatasetFolderPaths(strDatasetName, out var strStorageServerFolderPath, out var strArchiveFolderPath))
+            if (!LookupDatasetDirectoryPaths(datasetName, out var storageServerDirectoryPath, out var archiveDirectoryPath))
             {
                 return false;
             }
 
-            return ProcessFile(strStorageServerFolderPath, strArchiveFolderPath, "", true);
+            return ProcessFile(storageServerDirectoryPath, archiveDirectoryPath, "", true);
         }
 
         /// <summary>
-        /// Compares the two specified files or two specified folders
+        /// Compares the two specified files or two specified directories
         /// </summary>
-        /// <param name="inputFilePath">Base file or folder to read</param>
-        /// <param name="outputFolderPath">File or folder to compare to inputFilePath</param>
+        /// <param name="inputFilePath">Base file or directory to read</param>
+        /// <param name="outputDirectoryPath">File or directory to compare to inputFilePath</param>
         /// <param name="parameterFilePath">Parameter file path (unused)</param>
         /// <param name="resetErrorCode"></param>
         /// <returns></returns>
-        /// <remarks>If inputFilePath is a file but outputFolderPath is a folder, then looks for a file named inputFilePath in folder outputFolderPath</remarks>
-        public override bool ProcessFile(string inputFilePath, string outputFolderPath, string parameterFilePath, bool resetErrorCode)
+        /// <remarks>If inputFilePath is a file but outputDirectoryPath is a directory, looks for a file named inputFilePath in directory outputDirectoryPath</remarks>
+        public override bool ProcessFile(string inputFilePath, string outputDirectoryPath, string parameterFilePath, bool resetErrorCode)
         {
             try
             {
@@ -883,71 +881,71 @@ namespace FileComparisonSampler
                     return false;
                 }
 
-                var diBaseFolder = new DirectoryInfo(inputFilePath);
-                if (diBaseFolder.Exists)
+                var baseDirectory = new DirectoryInfo(inputFilePath);
+                if (baseDirectory.Exists)
                 {
-                    // Comparing folder contents
-                    if (string.IsNullOrWhiteSpace(outputFolderPath))
+                    // Comparing directory contents
+                    if (string.IsNullOrWhiteSpace(outputDirectoryPath))
                     {
-                        ShowErrorMessage("Base item is a folder (" + inputFilePath + "), but the comparison item is empty; unable to continue");
+                        ShowErrorMessage("Base item is a directory (" + inputFilePath + "), but the comparison item is empty; unable to continue");
                         SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
-                    var diComparisonFolder = new DirectoryInfo(outputFolderPath);
-                    if (!diComparisonFolder.Exists)
+                    var comparisonDirectory = new DirectoryInfo(outputDirectoryPath);
+                    if (!comparisonDirectory.Exists)
                     {
-                        ShowErrorMessage("Base item is a folder (" + inputFilePath + "), but the comparison folder was not found: " +
-                                         outputFolderPath);
+                        ShowErrorMessage("Base item is a directory (" + inputFilePath + "), but the comparison directory was not found: " +
+                                         outputDirectoryPath);
                         SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
-                    return CompareFolders(diBaseFolder.FullName, diComparisonFolder.FullName, mNumberOfSamples, mSampleSizeBytes);
+                    return CompareDirectories(baseDirectory.FullName, comparisonDirectory.FullName, mNumberOfSamples, mSampleSizeBytes);
                 }
                 else
                 {
                     // Comparing files
-                    var fiBaseFile = new FileInfo(inputFilePath);
-                    if (!fiBaseFile.Exists)
+                    var baseFile = new FileInfo(inputFilePath);
+                    if (!baseFile.Exists)
                     {
                         ShowErrorMessage("Base file to compare not found: " + inputFilePath);
                         SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
-                    if (string.IsNullOrWhiteSpace(outputFolderPath))
+                    if (string.IsNullOrWhiteSpace(outputDirectoryPath))
                     {
                         ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item is empty; unable to continue");
                         SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
-                    var diComparisonFolder = new DirectoryInfo(outputFolderPath);
-                    string strComparisonFilePath;
-                    if (diComparisonFolder.Exists)
+                    var comparisonDirectory = new DirectoryInfo(outputDirectoryPath);
+                    string comparisonFilePath;
+                    if (comparisonDirectory.Exists)
                     {
-                        // Will look for a file in the comparison folder with the same name as the input file
-                        strComparisonFilePath = Path.Combine(diComparisonFolder.FullName, Path.GetFileName(inputFilePath));
+                        // Will look for a file in the comparison directory with the same name as the input file
+                        comparisonFilePath = Path.Combine(comparisonDirectory.FullName, Path.GetFileName(inputFilePath));
                     }
                     else
                     {
-                        var fiComparisonFile = new FileInfo(outputFolderPath);
-                        if (!fiComparisonFile.Exists)
+                        var comparisonFile = new FileInfo(outputDirectoryPath);
+                        if (!comparisonFile.Exists)
                         {
                             ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item was not found: " +
-                                             outputFolderPath);
+                                             outputDirectoryPath);
                             SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
                             return false;
                         }
 
-                        strComparisonFilePath = fiComparisonFile.FullName;
+                        comparisonFilePath = comparisonFile.FullName;
 
                     }
 
                     ShowParameters();
 
-                    return CompareFiles(inputFilePath, strComparisonFilePath, mNumberOfSamples, mSampleSizeBytes, true);
+                    return CompareFiles(inputFilePath, comparisonFilePath, mNumberOfSamples, mSampleSizeBytes, true);
                 }
 
             }
@@ -959,9 +957,9 @@ namespace FileComparisonSampler
 
         }
 
-        private void SetLocalErrorCode(eFileComparerErrorCodes eNewErrorCode, bool blnLeaveExistingErrorCodeUnchanged = false)
+        private void SetLocalErrorCode(eFileComparerErrorCodes eNewErrorCode, bool leaveExistingErrorCodeUnchanged = false)
         {
-            if (blnLeaveExistingErrorCodeUnchanged && mLocalErrorCode != eFileComparerErrorCodes.NoError)
+            if (leaveExistingErrorCodeUnchanged && mLocalErrorCode != eFileComparerErrorCodes.NoError)
             {
                 // An error code is already defined; do not change it
                 return;
@@ -985,9 +983,9 @@ namespace FileComparisonSampler
 
         protected void ShowParameters()
         {
-            var strDisplayValues = mNumberOfSamples + "_" + mSampleSizeBytes;
+            var displayValues = mNumberOfSamples + "_" + mSampleSizeBytes;
 
-            if (mLastParameterDisplayValues == strDisplayValues)
+            if (mLastParameterDisplayValues == displayValues)
             {
                 // Values have already been displayed
             }
@@ -996,7 +994,7 @@ namespace FileComparisonSampler
                 ShowMessage("Number of samples: " + mNumberOfSamples);
                 ShowMessage("Sample Size:       " + BytesToHumanReadable(mSampleSizeBytes));
                 Console.WriteLine();
-                mLastParameterDisplayValues = strDisplayValues;
+                mLastParameterDisplayValues = displayValues;
             }
         }
 
