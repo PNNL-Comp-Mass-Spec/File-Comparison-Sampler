@@ -1,5 +1,9 @@
 File Comparison Sampler
 
+Version 1.2.6677; April 13, 2018
+	- Update to C#
+	- Add command line arguments /KB, /MB, and /GB
+
 Version 1.1.5228; April 25, 2014
 	- Resharper code cleanup
 
