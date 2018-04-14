@@ -1,47 +1,82 @@
-This program compares two or more files (typically in separate folders) to check 
-whether the start of the files match, the end of the files match, and selected 
-sections inside the files also match. It is useful for comparing large files 
-without reading the entire file.  Alternatively, you can provide two folder 
-paths and the program will compare all of the files in the first folder 
-to the identically named files in the second folder.
+# File Comparison Sampler
+
+This program compares two or more files (typically in separate directories) to
+check whether the start of the files match, the end of the files match, and
+selected sections inside the files also match. Useful for comparing large files
+without reading the entire file. Alternatively, you can provide two directory
+paths and the program will compare all of the files in the first directory to the
+identically named files in the second directory.
+
+### Continuous Integration
+
+The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
+
+## Installation
+
+* Download File-Comparison-Sampler.zip from [AppVeyor](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
+* Extract the files
+* Run FileComparisonSampler.exe
+
+## Console Switches
+
+The File Comparison Sampler must be run from the Windows command line.  Syntax:
 
 Program syntax 1:
-FileComparisonSampler.exe
- FilePath1 FilePath2 [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
- [/P:ParameterFilePath] [/Q]
+```
+ FileComparisonSampler.exe FilePath1 FilePath2
+ [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
+ [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]
  [/L[:LogFilePath]] [/LogFolder:LogFolderPath]
+```
 
 Program syntax 2:
-FileComparisonSampler.exe
- FolderPath1 FolderPath2 [/N:NumberOfSamples]  [/Bytes:SampleSizeBytes]
- [/P:ParameterFilePath] [/Q] [/L] [/LogFolder]
+```
+ FileComparisonSampler.exe DirectoryPath1 DirectoryPath2
+ [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
+ [/L] [/LogFolder]
+```
 
 Program syntax 3:
-FileComparisonSampler.exe
- FileMatchSpec FolderPathToExamine [/N:NumberOfSamples]  [/Bytes:SampleSizeBytes]
- [/P:ParameterFilePath] [/Q] [/L] [/LogFolder]
+```
+ FileComparisonSampler.exe FileMatchSpec DirectoryPathToExamine
+ [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
+ [/L] [/LogFolder]
+```
+
+Program syntax 4:
+```
+ FileComparisonSampler.exe DMS DatasetNameToCheck
+ [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
+ [/L] [/LogFolder]
+```
 
 Use Syntax 1 to compare two files; in this case the filenames cannot have wildcards
-Use Syntax 2 to compare two folders (including all subfolders)
-Use Syntax 3 to compare a set of files in one folder to identically named files in a separate folder.  Use wildcards in FileM
-atchSpec to specify the files to examine
 
-Use /N to specify the number of portions of a file to examine.  The default is 10; the minimum is 2, indicating the beginning
- and the end
-Use /Bytes to indicate the number of bytes to read from each file portion; default is 524288 bytes
+Use Syntax 2 to compare two directories (including all subdirectories)
 
-The parameter file path is optional.  If included, it should point to a valid XML parameter file (currently ignored).
+Use Syntax 3 to compare a set of files in one directory to identically named
+files in a separate directory. Use wildcards in FileMatchSpec to specify the
+files to examine
 
-Use /L to log messages to a file.  Use the optional /Q switch will suppress all error messages.
+Use Syntax 4 to compare a DMS dataset's files between the storage server and the
+archive. The first argument must be DMS; the second argument is the Dataset Name.
 
--------------------------------------------------------------------------------
-Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-Copyright 2013, Battelle Memorial Institute.  All Rights Reserved.
+Use /N to specify the number of portions of a file to examine. The default is 10;
+the minimum is 2, indicating the beginning and the end
 
-E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov
--------------------------------------------------------------------------------
+Use /Bytes, /KB, /MB, or /GB to indicate the number of bytes to read from each
+file portion; The default is 512 KB
 
-Licensed under the Apache License, Version 2.0; you may not use this file except 
-in compliance with the License.  You may obtain a copy of the License at 
-http://www.apache.org/licenses/LICENSE-2.0
+Use /L to log messages to a file. Optionally specify the log folder using /LogFolder
+
+## Contacts
+
+Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
+E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
+Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov
+
+## License
+
+The File Comparison Sampler is licensed under the Apache License, Version 2.0; 
+you may not use this file except in compliance with the License.  You may obtain 
+a copy of the License at https://opensource.org/licenses/Apache-2.0
