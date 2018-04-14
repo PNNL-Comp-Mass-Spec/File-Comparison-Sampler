@@ -9,13 +9,11 @@ namespace FileComparisonSampler
 
     class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
     {
+        #region "Constants and enums"
 
-        public clsSampledFileComparer()
-        {
-            mFileDate = "April 13, 2018";
-            InitializeLocalVariables();
-        }
-
+        /// <summary>
+        /// Default number of samples
+        /// </summary>
         public const int DEFAULT_NUMBER_OF_SAMPLES = 10;
 
         /// <summary>
@@ -23,6 +21,9 @@ namespace FileComparisonSampler
         /// </summary>
         public const int DEFAULT_SAMPLE_SIZE_KB = 512;
 
+        /// <summary>
+        /// Minimum sample size (in bytes)
+        /// </summary>
         protected const int MINIMUM_SAMPLE_SIZE_BYTES = 64;
 
         /// <summary>
@@ -30,13 +31,14 @@ namespace FileComparisonSampler
         /// </summary>
         public enum eFileComparerErrorCodes
         {
-
             NoError = 0,
-
             ErrorReadingInputFile = 1,
-
             UnspecifiedError = -1,
         }
+
+        #endregion
+
+        #region "Classwide variables"
 
         protected int mNumberOfSamples;
 
@@ -47,6 +49,10 @@ namespace FileComparisonSampler
         protected eFileComparerErrorCodes mLocalErrorCode;
 
         public eFileComparerErrorCodes LocalErrorCode => mLocalErrorCode;
+
+        #endregion
+
+        #region "Properties"
 
         public int NumberOfSamples
         {
@@ -76,14 +82,31 @@ namespace FileComparisonSampler
             }
         }
 
-        protected string BytesToHumanReadable(long intBytes)
+        #endregion
+
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public clsSampledFileComparer()
         {
-            if (intBytes < 10000)
+            mFileDate = "April 13, 2018";
+            InitializeLocalVariables();
+        }
+
+        /// <summary>
+        /// Convert bytes to a human-readable string
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        protected string BytesToHumanReadable(long bytes)
+        {
+            if (bytes < 10000)
             {
-                return intBytes.ToString();
+                return bytes.ToString();
             }
 
-            double dblBytes = intBytes;
+            double dblBytes = bytes;
             var lstPrefixes = new List<string> {string.Empty, "KB", "MB", "GB", "TB", "PB"};
 
             var intPrefixIndex = 0;
@@ -611,6 +634,13 @@ namespace FileComparisonSampler
 
         }
 
+        /// <summary>
+        /// Compare the size of two files
+        /// </summary>
+        /// <param name="fiFilePathBase"></param>
+        /// <param name="fiFilePathToCompare"></param>
+        /// <param name="strComparisonResult"></param>
+        /// <returns>Trueif the sizes match, otherwise false</returns>
         public bool FileLengthsMatch(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult)
         {
             if (!fiFilePathBase.Exists)
@@ -641,9 +671,13 @@ namespace FileComparisonSampler
 
         }
 
+        /// <summary>
+        /// Get the error message
+        /// </summary>
+        /// <returns>Error message, or empty string if no error</returns>
         public override string GetErrorMessage()
         {
-            // Returns "" if no error
+
             string strErrorMessage;
             if (ErrorCode == eProcessFilesErrorCodes.LocalizedError ||
                 ErrorCode == eProcessFilesErrorCodes.NoError)
@@ -796,6 +830,12 @@ namespace FileComparisonSampler
 
         }
 
+        /// <summary>
+        /// Process a DMS dataset, comparing files in the dataset folder to the archive
+        /// ToDo: Update to work with MyEMSL
+        /// </summary>
+        /// <param name="strDatasetName"></param>
+        /// <returns>True if all files match, otherwise false</returns>
         public bool ProcessDMSDataset(string strDatasetName)
         {
             if (!LookupDatasetFolderPaths(strDatasetName, out var strStorageServerFolderPath, out var strArchiveFolderPath))

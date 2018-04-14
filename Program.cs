@@ -23,9 +23,15 @@ using PRISM;
 
 namespace FileComparisonSampler
 {
+    /// <summary>
+    /// Entry class for the .exe
+    /// </summary>
     class Program
     {
 
+        /// <summary>
+        /// Program date
+        /// </summary>
         public const string PROGRAM_DATE = "April 13, 2018";
 
         private static string mInputFileOrDirectoryPath;
