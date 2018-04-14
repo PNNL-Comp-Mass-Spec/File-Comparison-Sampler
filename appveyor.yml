@@ -1,0 +1,12 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+before_build:
+- cmd: nuget.exe restore FileComparisonSampler.sln
+configuration: Release
+platform: Any CPU
+build:
+  project: FileComparisonSampler.sln
+  verbosity: minimal
+artifacts:
+- path: bin
+  name: File-Comparison-Sampler
