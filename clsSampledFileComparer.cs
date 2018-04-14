@@ -196,7 +196,7 @@ namespace FileComparisonSampler
                     return false;
                 }
 
-                ShowMessage("Comparing " + Path.GetFileName(inputFilePathBase));
+                Console.Write("Comparing " + Path.GetFileName(inputFilePathBase));
                 var baseFile = new FileInfo(inputFilePathBase);
                 var comparisonFile = new FileInfo(inputFilePathToCompare);
 
@@ -219,13 +219,19 @@ namespace FileComparisonSampler
                 {
                     if (string.IsNullOrEmpty(comparisonResult))
                     {
-                        LogMessage("Files do not match: " + pathsCompared, eMessageTypeConstants.Warning);
                         Console.WriteLine(" ... *** files do not match ***");
+                        if (LogMessagesToFile)
+                        {
+                            LogMessage("Files do not match: " + pathsCompared, eMessageTypeConstants.Warning);
+                        }
                     }
                     else
                     {
-                        LogMessage(strComparisonResult + ": " + pathsCompared, eMessageTypeConstants.Warning);
-                        Console.WriteLine(" ... *** " + strComparisonResult + " ***");
+                        Console.WriteLine(" ... *** " + comparisonResult + " ***");
+                        if (LogMessagesToFile)
+                        {
+                            LogMessage(comparisonResult + ": " + pathsCompared, eMessageTypeConstants.Warning);
+                        }
                     }
 
                 }
@@ -233,13 +239,19 @@ namespace FileComparisonSampler
                 {
                     if (string.IsNullOrEmpty(comparisonResult))
                     {
-                        LogMessage("Files match: " + pathsCompared);
                         Console.WriteLine(" ... files match");
+                        if (LogMessagesToFile)
+                        {
+                            LogMessage("Files match: " + pathsCompared);
+                        }
                     }
                     else
                     {
-                        LogMessage(strComparisonResult + ": " + pathsCompared);
-                        Console.WriteLine(" ... " + strComparisonResult);
+                        Console.WriteLine(" ... " + comparisonResult);
+                        if (LogMessagesToFile)
+                        {
+                            LogMessage(comparisonResult + ": " + pathsCompared);
+                        }
                     }
 
                 }

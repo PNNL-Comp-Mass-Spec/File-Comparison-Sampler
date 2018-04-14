@@ -147,8 +147,6 @@ namespace FileComparisonSampler
 
                 }
 
-                DisplayProgressPercent(mLastProgressReportValue, true);
-
                 return returnCode;
             }
             catch (Exception ex)
