@@ -1,859 +1,964 @@
-﻿Option Strict On
-
-' This class compares two files or two folders to check whether the
-' start of the files match, the end of the files match, and selected sections inside the files also match
-'
-' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Program started April 2, 2004
-'
-' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-' Website: http://panomics.pnnl.gov/ or http://www.sysbio.org/resources/staff/
-' -------------------------------------------------------------------------------
-' 
-' Licensed under the Apache License, Version 2.0; you may not use this file except
-' in compliance with the License.  You may obtain a copy of the License at 
-' http://www.apache.org/licenses/LICENSE-2.0
-
-Imports System.IO
-
-Public Class clsSampledFileComparer
-	Inherits clsProcessFilesBaseClass
-
-	Public Sub New()
-		MyBase.mFileDate = "April 25, 2014"
-		InitializeLocalVariables()
-	End Sub
-
-#Region "Constants and Enums"
-
-	Public Const DEFAULT_NUMBER_OF_SAMPLES As Integer = 10
-	Public Const DEFAULT_SAMPLE_SIZE_BYTES As Integer = 524288		' 512 KB
-
-	Protected Const MINIMUM_SAMPLE_SIZE_BYTES As Integer = 64
-
-	' Error codes specialized for this class
-	Public Enum eFileComparerErrorCodes
-		NoError = 0
-		ErrorReadingInputFile = 1
-		UnspecifiedError = -1
-	End Enum
-#End Region
-
-#Region "Structures"
-#End Region
-
-#Region "Classwide Variables"
-
-	Protected mNumberOfSamples As Integer
-	Protected mSampleSizeBytes As Int64
-
-	Protected mLastParameterDisplayValues As String = String.Empty
-
-	Protected mLocalErrorCode As eFileComparerErrorCodes
-#End Region
-
-#Region "Interface Functions"
-
-	Public ReadOnly Property LocalErrorCode() As eFileComparerErrorCodes
-		Get
-			Return mLocalErrorCode
-		End Get
-	End Property
-
-
-	Public Property NumberOfSamples As Integer
-		Get
-			Return mNumberOfSamples
-		End Get
-		Set(value As Integer)
-			If value < 2 Then value = 2
-			mNumberOfSamples = value
-		End Set
-	End Property
-
-	Public Property SampleSizeBytes As Int64
-		Get
-			Return mSampleSizeBytes
-		End Get
-		Set(value As Int64)
-			If value < MINIMUM_SAMPLE_SIZE_BYTES Then value = MINIMUM_SAMPLE_SIZE_BYTES
-			mSampleSizeBytes = value
-		End Set
-	End Property
-
-#End Region
-
-	Protected Function BytesToHumanReadable(intBytes As Int64) As String
-
-		If intBytes < 10000 Then
-			Return intBytes.ToString()
-		Else
-			Dim dblBytes As Double = intBytes
-			Dim lstPrefixes As List(Of String) = New List(Of String) From {String.Empty, "KB", "MB", "GB", "TB", "PB"}
-			Dim intPrefixIndex As Integer = 0
-
-			While dblBytes >= 10000 AndAlso intPrefixIndex < lstPrefixes.Count
-				dblBytes /= 1024.0
-				intPrefixIndex += 1
-			End While
-
-			Return Math.Round(dblBytes, 0).ToString("0") & " " & lstPrefixes(intPrefixIndex)
-		End If
-
-	End Function
-
-
-	''' <summary>
-	''' Compares two files
-	''' </summary>
-	''' <param name="strInputFilePathBase"></param>
-	''' <param name="strInputFilePathToCompare"></param>
-	''' <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-	''' <remarks></remarks>
-	Public Function CompareFiles(ByVal strInputFilePathBase As String, ByVal strInputFilePathToCompare As String) As Boolean
-		Return CompareFiles(strInputFilePathBase, strInputFilePathToCompare, intNumberOfSamples:=DEFAULT_NUMBER_OF_SAMPLES, intSampleSizeBytes:=DEFAULT_SAMPLE_SIZE_BYTES, blnShowMessageIfMatch:=True)
-	End Function
-
-	''' <summary>
-	''' Compares two files
-	''' </summary>
-	''' <param name="strInputFilePathBase"></param>
-	''' <param name="strInputFilePathToCompare"></param>
-	''' <param name="intNumberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
-	''' <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-	''' <remarks></remarks>
-	Public Function CompareFiles(ByVal strInputFilePathBase As String, ByVal strInputFilePathToCompare As String, ByVal intNumberOfSamples As Integer) As Boolean
-		Return CompareFiles(strInputFilePathBase, strInputFilePathToCompare, intNumberOfSamples:=intNumberOfSamples, intSampleSizeBytes:=DEFAULT_SAMPLE_SIZE_BYTES, blnShowMessageIfMatch:=True)
-	End Function
-
-	''' <summary>
-	''' Compares two files
-	''' </summary>
-	''' <param name="strInputFilePathBase"></param>
-	''' <param name="strInputFilePathToCompare"></param>
-	''' <param name="intNumberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
-	''' <param name="intSampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
-	''' <param name="blnShowMessageIfMatch">When true, then reports that files matched (always reports if files do not match)</param>
-	''' <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-	''' <remarks></remarks>
-	Public Function CompareFiles(ByVal strInputFilePathBase As String, ByVal strInputFilePathToCompare As String, ByVal intNumberOfSamples As Integer, ByVal intSampleSizeBytes As Int64, ByVal blnShowMessageIfMatch As Boolean) As Boolean
-
-		Const FIVE_HUNDRED_MB As Integer = 1024 * 1024 * 512
-
-		Dim blnSuccess As Boolean
-
-		Try
-			If intNumberOfSamples < 2 Then intNumberOfSamples = 2
-			If intSampleSizeBytes < MINIMUM_SAMPLE_SIZE_BYTES Then intSampleSizeBytes = MINIMUM_SAMPLE_SIZE_BYTES
-			If intSampleSizeBytes > FIVE_HUNDRED_MB Then
-				intSampleSizeBytes = FIVE_HUNDRED_MB
-			End If
-
-			If String.IsNullOrWhiteSpace(strInputFilePathBase) Then
-				ShowErrorMessage("Base input file path is empty")
-				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-				Return False
-			ElseIf String.IsNullOrWhiteSpace(strInputFilePathToCompare) Then
-				ShowErrorMessage("Input file path to compare is empty")
-				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-				Return False
-			End If
-
-			LogMessage("Comparing " & Path.GetFileName(strInputFilePathBase))
-			Console.Write("Comparing " & Path.GetFileName(strInputFilePathBase))
-
-			Dim fiFilePathBase As FileInfo = New FileInfo(strInputFilePathBase)
-			Dim fiFilePathToCompare As FileInfo = New FileInfo(strInputFilePathToCompare)
-			Dim strComparisonResult As String = String.Empty
-
-			If intNumberOfSamples * intSampleSizeBytes > fiFilePathBase.Length Then
-				' Do a full comparison
-				blnSuccess = CompareFilesComplete(fiFilePathBase, fiFilePathToCompare, strComparisonResult)
-			Else
-				blnSuccess = CompareFilesSampled(fiFilePathBase, fiFilePathToCompare, strComparisonResult, intNumberOfSamples, intSampleSizeBytes)
-			End If
-
-
-			If Not blnSuccess Then
-				If String.IsNullOrEmpty(strComparisonResult) Then
-					LogMessage("Files do not match: " & strInputFilePathBase & "  vs. " & strInputFilePathToCompare, eMessageTypeConstants.Warning)
-					Console.WriteLine(" ... *** files do not match ***")
-				Else
-					LogMessage(strComparisonResult & ": " & strInputFilePathBase & "  vs. " & strInputFilePathToCompare, eMessageTypeConstants.Warning)
-					Console.WriteLine(" ... *** " & strComparisonResult & " ***")
-				End If
-
-			ElseIf blnShowMessageIfMatch And Not String.IsNullOrEmpty(strComparisonResult) Then
-
-				If String.IsNullOrEmpty(strComparisonResult) Then
-					LogMessage("Files match: " & strInputFilePathBase & "  vs. " & strInputFilePathToCompare)
-					Console.WriteLine(" ... files match")
-				Else
-					LogMessage(strComparisonResult & ": " & strInputFilePathBase & "  vs. " & strInputFilePathToCompare)
-					Console.WriteLine(" ... " & strComparisonResult)
-				End If
-
-			End If
-
-		Catch ex As Exception
-			HandleException("Error in CompareFiles", ex)
-			Return False
-		End Try
-
-		Return blnSuccess
-
-	End Function
-
-	''' <summary>
-	''' Perform a full byte-by-byte comparison of the two files
-	''' </summary>
-	''' <param name="fiFilePathBase"></param>
-	''' <param name="fiFilePathToCompare"></param>
-	''' <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
-	''' <returns>True if the files match; otherwise false</returns>
-	''' <remarks></remarks>
-	Public Function CompareFilesComplete(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String) As Boolean
-
-		If Not FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, strComparisonResult) Then
-			Return False
-		End If
-
-		Dim blnFilesMatch As Boolean
-
-		Using brBaseFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-			Using brComparisonFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-				blnFilesMatch = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResult, -1, -1, "Full comparison", DateTime.UtcNow)
-			End Using
-		End Using
-
-		Return blnFilesMatch
-
-	End Function
-
-	''' <summary>
-	''' Perform a full byte-by-byte comparison of a section of two files
-	''' </summary>
-	''' <param name="brBaseFile"></param>
-	''' <param name="brComparisonFile"></param>
-	''' <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
-	''' <param name="intStartOffset">File offset to start the comparison; use -1 to specify that the entire file should be read</param>
-	''' <param name="intSampleSizeBytes">Number of bytes to compare; ignored if intStartOffset is less than 0</param>
-	''' <param name="strSampleDescription">Description of the current section of the file being compared</param>
-	''' <param name="dtLastStatusTime">The last time that a status message was shown (UTC time)</param>
-	''' <returns>True if the files match; otherwise false</returns>
-	''' <remarks></remarks>
-	Protected Function CompareFileSection(
-	 ByVal brBaseFile As BinaryReader,
-	 ByVal brComparisonFile As BinaryReader,
-	 ByRef strComparisonResult As String,
-	 ByVal intStartOffset As Int64,
-	 ByVal intSampleSizeBytes As Int64,
-	 ByVal strSampleDescription As String,
-	 ByRef dtLastStatusTime As DateTime) As Boolean
-
-		Const CHUNK_SIZE_BYTES As Integer = 1024 * 1024 * 50	' 50 MB
-
-		Dim intEndOffset As Int64
-		Dim intOffsetPriorToRead As Int64
-
-		Dim intBytesToRead As Integer
-		Dim bytFile1() As Byte
-		Dim bytFile2() As Byte
-
-		Dim dblPercentShown As Boolean = False
-
-		Try
-
-			strComparisonResult = String.Empty
-
-			If intStartOffset < 0 Then
-				' Compare the entire file						
-				intEndOffset = brBaseFile.BaseStream.Length
-			Else
-
-				If intSampleSizeBytes < 1 Then intSampleSizeBytes = 1
-
-				intEndOffset = intStartOffset + intSampleSizeBytes
-				If intEndOffset > brBaseFile.BaseStream.Length Then
-					intEndOffset = brBaseFile.BaseStream.Length
-				End If
-
-				If intStartOffset > 0 Then
-					If intStartOffset > brBaseFile.BaseStream.Length Then
-						strComparisonResult = "StartOffset is beyond the end of the base file"
-						Return False
-					ElseIf intStartOffset > brComparisonFile.BaseStream.Length Then
-						strComparisonResult = "StartOffset is beyond the end of the comparison file"
-						Return False
-					End If
-
-					brBaseFile.BaseStream.Position = intStartOffset
-					brComparisonFile.BaseStream.Position = intStartOffset
-
-				End If
-
-			End If
-
-			While brBaseFile.BaseStream.Position < brBaseFile.BaseStream.Length AndAlso brBaseFile.BaseStream.Position < intEndOffset
-				intOffsetPriorToRead = brBaseFile.BaseStream.Position
-
-				If brBaseFile.BaseStream.Position + CHUNK_SIZE_BYTES <= intEndOffset Then
-					intBytesToRead = CHUNK_SIZE_BYTES
-				Else
-					intBytesToRead = CType(intEndOffset - brBaseFile.BaseStream.Position, Integer)
-				End If
-
-				If intBytesToRead = 0 Then
-					Exit While
-				End If
-
-				bytFile1 = brBaseFile.ReadBytes(intBytesToRead)
-				bytFile2 = brComparisonFile.ReadBytes(intBytesToRead)
-
-				For intIndex As Integer = 0 To bytFile1.Length - 1
-					If bytFile2(intIndex) <> bytFile1(intIndex) Then
-						strComparisonResult = "Mismatch at offset " & intOffsetPriorToRead + intIndex
-						Return False
-					End If
-				Next
-
-				If DateTime.UtcNow.Subtract(dtLastStatusTime).TotalSeconds >= 5 Then
-					dtLastStatusTime = DateTime.UtcNow
-
-					Dim dblPercentComplete As Double = (brBaseFile.BaseStream.Position - intStartOffset) / (intEndOffset - intStartOffset) * 100
-
-					If dblPercentComplete < 100 OrElse dblPercentShown Then
-						dblPercentShown = True
-						Console.WriteLine("   " & strSampleDescription & ", " & dblPercentComplete.ToString("0.0") & "%")
-					Else
-						Console.WriteLine("   " & strSampleDescription)
-					End If
-
-				End If
-			End While
-
-			strComparisonResult = "Files match"
-
-		Catch ex As Exception
-			HandleException("Error in CompareFileSection", ex)
-			Return False
-		End Try
-
-		Return True
-	End Function
-
-	''' <summary>
-	''' Compares the beginning, end, and optionally one or more middle sections of a file
-	''' </summary>
-	''' <param name="fiFilePathBase"></param>
-	''' <param name="fiFilePathToCompare"></param>
-	''' <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
-	''' <param name="intNumberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
-	''' <param name="intSampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
-	''' <returns>True if the files match; otherwise false</returns>
-	''' <remarks></remarks>
-	Public Function CompareFilesSampled(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String, ByVal intNumberOfSamples As Integer, ByVal intSampleSizeBytes As Int64) As Boolean
-
-		Dim blnMatchAtStart As Boolean
-		Dim blnMatchAtEnd As Boolean
-		Dim blnMatchInMiddle As Boolean
-
-		Dim strComparisonResultAtStart As String = String.Empty
-		Dim strComparisonResultAtEnd As String = String.Empty
-
-		Dim strSampleDescription As String
-		Dim intSampleNumber As Integer = 0
-
-		Dim intStartOffset As Int64
-		Dim intBytesExamined As Int64 = 0
-
-		If Not FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, strComparisonResult) Then
-			Return False
-		End If
-
-		Using brBaseFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-			Using brComparisonFile As BinaryReader = New BinaryReader(New FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-
-				intStartOffset = 0
-				intBytesExamined += intSampleSizeBytes
-
-				intSampleNumber += 1
-				strSampleDescription = "Sample " & intSampleNumber & " of " & intNumberOfSamples.ToString
-				Dim dtLastStatusTime = DateTime.UtcNow()
-
-				blnMatchAtStart = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResultAtStart, intStartOffset, intSampleSizeBytes, strSampleDescription, dtLastStatusTime)
-
-				' Update the start offset to be SampleSizeBytes before the end of the file
-				intStartOffset = fiFilePathBase.Length - intSampleSizeBytes
-				If intStartOffset < 0 Then
-					intBytesExamined += intSampleSizeBytes + intStartOffset
-					intStartOffset = 0
-				Else
-					intBytesExamined += intSampleSizeBytes
-				End If
-
-				intSampleNumber += 1
-				strSampleDescription = "Sample " & intSampleNumber & " of " & intNumberOfSamples.ToString
-
-				blnMatchAtEnd = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResultAtEnd, intStartOffset, intSampleSizeBytes, strSampleDescription, dtLastStatusTime)
-
-				If blnMatchAtStart And Not blnMatchAtEnd Then
-					strComparisonResult = "Files match at the beginning but not at the end; " & strComparisonResultAtEnd
-					Return False
-				ElseIf blnMatchAtEnd And Not blnMatchAtStart Then
-					strComparisonResult = "Files match at the end but not at the beginning; " & strComparisonResultAtStart
-					Return False
-				End If
-
-				If intNumberOfSamples > 2 AndAlso fiFilePathBase.Length > intSampleSizeBytes * 2 Then
-
-					Dim intMidSectionSamples As Integer = intNumberOfSamples - 2
-					Dim dblSeekLength As Double = fiFilePathBase.Length / (intMidSectionSamples + 1)
-					Dim dblCurrentOffset As Double = dblSeekLength - intSampleSizeBytes / 2
-
-					Do While dblCurrentOffset < fiFilePathBase.Length
-						intStartOffset = CType(Math.Round(dblCurrentOffset, 0), Int64)
-						If intStartOffset < 0 Then intStartOffset = 0
-
-						intSampleNumber += 1
-						strSampleDescription = "Sample " & intSampleNumber & " of " & intNumberOfSamples.ToString
-
-						blnMatchInMiddle = CompareFileSection(brBaseFile, brComparisonFile, strComparisonResult, intStartOffset, intSampleSizeBytes, strSampleDescription, dtLastStatusTime)
-
-						If Not blnMatchInMiddle Then
-							strComparisonResult = "Files match at the beginning and end, but not in the middle; " & strComparisonResult
-							Return False
-						End If
-
-						dblCurrentOffset += dblSeekLength
-						intBytesExamined += intSampleSizeBytes
-					Loop
-
-				End If
-			End Using
-		End Using
-
-
-		Dim dblPercentExamined As Double = intBytesExamined / fiFilePathBase.Length * 100.0
-		If dblPercentExamined > 100 Then dblPercentExamined = 100
-		strComparisonResult = "Files match (examined " & dblPercentExamined.ToString("0.00") & "% of the file)"
-
-		Return True
-
-	End Function
-
-	''' <summary>
-	''' Compares each file in folder strInputFolderPath1 to files in folder strInputFolderPath2
-	''' </summary>
-	''' <param name="strInputFolderPath1"></param>
-	''' <param name="strInputFolderPath2"></param>
-	''' <param name="intNumberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
-	''' <param name="intSampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
-	''' <returns>True if the folders Match; false if they do not match</returns>
-	''' <remarks></remarks>
-	Public Function CompareFolders(ByVal strInputFolderPath1 As String, ByVal strInputFolderPath2 As String, ByVal intNumberOfSamples As Integer, intSampleSizeBytes As Int64) As Boolean
-
-		Dim intSourceFilesFound As Integer = 0
-		Dim intMatchedFileCount As Integer = 0
-
-		Dim intMissingFileCount As Integer = 0
-		Dim intMismatchedFileCount As Integer = 0
-
-		Try
-
-			strInputFolderPath1 = strInputFolderPath1.TrimEnd(Path.DirectorySeparatorChar)
-			strInputFolderPath2 = strInputFolderPath2.TrimEnd(Path.DirectorySeparatorChar)
-
-			Dim diBaseFolder As DirectoryInfo = New DirectoryInfo(strInputFolderPath1)
-
-			If Not diBaseFolder.Exists Then
-				ShowErrorMessage("Base folder to compare not found: " & strInputFolderPath1)
-				SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-				Return False
-			End If
-
-			Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strInputFolderPath2)
-
-			If Not diComparisonFolder.Exists Then
-				ShowErrorMessage("Comparison folder not found: " & strInputFolderPath2)
-				SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-				Return False
-			End If
-
-			ShowMessage("Comparing folders: " & diBaseFolder.FullName)
-			ShowMessage("               vs. " & diComparisonFolder.FullName)
-
-			Console.WriteLine()
-			ShowParameters()
-
-			For Each fiFile In diBaseFolder.GetFiles("*.*", SearchOption.AllDirectories)
-				' Look for the corresponding item in the comparison folder
-
-				Dim fiComparisonFile As FileInfo
-
-				If fiFile.Directory.FullName = diBaseFolder.FullName Then
-					fiComparisonFile = New FileInfo(Path.Combine(strInputFolderPath2, fiFile.Name))
-				Else
-
-					Dim strSubdirectoryAddon As String
-					strSubdirectoryAddon = fiFile.Directory.FullName.Substring(diBaseFolder.FullName.Length + 1)
-					fiComparisonFile = New FileInfo(Path.Combine(strInputFolderPath2, strSubdirectoryAddon, fiFile.Name))
-				End If
-
-				If Not fiComparisonFile.Exists Then
-					ShowMessage("  File " & fiFile.Name & " not found in the comparison folder")
-					intMissingFileCount += 1
-				Else
-					If CompareFiles(fiFile.FullName, fiComparisonFile.FullName, intNumberOfSamples, intSampleSizeBytes, True) Then
-						intMatchedFileCount += 1
-					Else
-						intMismatchedFileCount += 1
-					End If
-
-				End If
-
-				intSourceFilesFound += 1
-			Next
-
-		Catch ex As Exception
-			HandleException("Error in CompareFolders", ex)
-			Return False
-		End Try
-
-		Console.WriteLine()
-		If intSourceFilesFound = 0 Then
-			ShowErrorMessage("Base folder was empty; nothing to compare: " & strInputFolderPath1)
-			Return True
-
-		ElseIf intMissingFileCount = 0 AndAlso intMismatchedFileCount = 0 Then
-			ShowMessage("Folders match; checked " & intSourceFilesFound & " file(s)")
-			Return True
-
-		ElseIf intMissingFileCount = 0 AndAlso intMismatchedFileCount > 0 Then
-			ShowMessage("Folders do not match; Mis-matched file count: " & intMismatchedFileCount & "; Matched file count: " & intMatchedFileCount)
-			Return False
-
-		ElseIf intMissingFileCount > 0 Then
-			ShowMessage("Comparison folder is missing " & intMissingFileCount & " file(s) that the base folder contains")
-			ShowMessage("Mis-matched file count: " & intMismatchedFileCount & "; Matched file count: " & intMatchedFileCount)
-			Return False
-
-		Else
-			Console.WriteLine("Note: unexpected logic encountered in If-Else-EndIf block in CompareFolders")
-
-			ShowMessage("Folders do not match; Mis-matched file count: " & intMismatchedFileCount & "; Matched file count: " & intMatchedFileCount)
-			Return False
-		End If
-
-	End Function
-
-	Public Function FileLengthsMatch(ByVal fiFilePathBase As FileInfo, ByVal fiFilePathToCompare As FileInfo, ByRef strComparisonResult As String) As Boolean
-
-		If Not fiFilePathBase.Exists() Then
-			strComparisonResult = "Base file to compare not found: " & fiFilePathBase.FullName
-			Return False
-		ElseIf Not fiFilePathToCompare.Exists() Then
-			strComparisonResult = "Comparison file not found: " & fiFilePathToCompare.FullName
-			Return False
-		End If
-
-		If fiFilePathBase.Length <> fiFilePathToCompare.Length Then
-			strComparisonResult = "Base file is " & (fiFilePathBase.Length / 1024.0).ToString("#,##0.0") & " KB; comparison file is " & (fiFilePathToCompare.Length / 1024.0).ToString("#,##0.0") & " KB"
-			Return False
-		Else
-			Return True
-		End If
-
-	End Function
-
-	Public Overrides Function GetErrorMessage() As String
-		' Returns "" if no error
-
-		Dim strErrorMessage As String
-
-		If MyBase.ErrorCode = eProcessFilesErrorCodes.LocalizedError Or _
-		   MyBase.ErrorCode = eProcessFilesErrorCodes.NoError Then
-			Select Case mLocalErrorCode
-				Case eFileComparerErrorCodes.NoError
-					strErrorMessage = ""
-				Case eFileComparerErrorCodes.ErrorReadingInputFile
-					strErrorMessage = "Error reading input file"
-				Case Else
-					' This shouldn't happen
-					strErrorMessage = "Unknown error state"
-			End Select
-		Else
-			strErrorMessage = MyBase.GetBaseClassErrorMessage()
-		End If
-
-		Return strErrorMessage
-
-	End Function
-
-	Private Sub InitializeLocalVariables()
-
-		mNumberOfSamples = DEFAULT_NUMBER_OF_SAMPLES
-		mSampleSizeBytes = DEFAULT_SAMPLE_SIZE_BYTES
-
-		mLocalErrorCode = eFileComparerErrorCodes.NoError
-	End Sub
-
-	Private Function LoadParameterFileSettings(ByVal strParameterFilePath As String) As Boolean
-
-		Const OPTIONS_SECTION As String = "Options"
-
-		Dim objSettingsFile As New XmlSettingsFileAccessor
-
-		Try
-
-			If strParameterFilePath Is Nothing OrElse strParameterFilePath.Length = 0 Then
-				' No parameter file specified; nothing to load
-				Return True
-			End If
-
-			If Not File.Exists(strParameterFilePath) Then
-				' See if strParameterFilePath points to a file in the same directory as the application
-				strParameterFilePath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), Path.GetFileName(strParameterFilePath))
-				If Not File.Exists(strParameterFilePath) Then
-					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.ParameterFileNotFound)
-					Return False
-				End If
-			End If
-
-			If objSettingsFile.LoadSettings(strParameterFilePath) Then
-				If Not objSettingsFile.SectionPresent(OPTIONS_SECTION) Then
-					If MyBase.ShowMessages Then
-						Console.WriteLine("The node '<section name=""" & OPTIONS_SECTION & """> was not found in the parameter file: " & strParameterFilePath)
-					End If
-					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile)
-					Return False
-				Else
-					' Me.SettingName = objSettingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
-				End If
-			End If
-
-		Catch ex As Exception
-			HandleException("Error in LoadParameterFileSettings", ex)
-			Return False
-		End Try
-
-		Return True
-
-	End Function
-
-	Private Function LookupDatasetFolderPaths(ByVal strDatasetName As String, ByRef strStorageServerFolderPath As String, ByRef strArchiveFolderPath As String) As Boolean
-		Return LookupDatasetFolderPaths(strDatasetName, strStorageServerFolderPath, strArchiveFolderPath, "Gigasax", "DMS5")
-	End Function
-
-	Private Function LookupDatasetFolderPaths(
-	  ByVal strDatasetName As String,
-	  ByRef strStorageServerFolderPath As String,
-	  ByRef strArchiveFolderPath As String,
-	  ByVal strDMSServer As String,
-	  ByVal strDMSDatabase As String) As Boolean
-
-		Dim blnSuccess As Boolean = False
-
-		Try
-			Dim ConnectionString As String = "Data Source=" + strDMSServer + ";Initial Catalog=" + strDMSDatabase + ";Integrated Security=SSPI;"
-
-			strStorageServerFolderPath = String.Empty
-			strArchiveFolderPath = String.Empty
-
-			Using Cn As New SqlClient.SqlConnection(ConnectionString)
-
-				Dim SqlStr As New Text.StringBuilder()
-
-				SqlStr.Append(" SELECT Dataset_Folder_Path, Archive_Folder_Path ")
-				SqlStr.Append(" FROM V_Dataset_Folder_Paths")
-				SqlStr.Append(" WHERE (Dataset = '" & strDatasetName & "')")
-
-				Cn.Open()
-
-				Using command As SqlClient.SqlCommand = New SqlClient.SqlCommand(SqlStr.ToString, Cn)
-
-					Using reader As SqlClient.SqlDataReader = command.ExecuteReader()
-
-						' Call Read to read the first row
-						If reader.Read() Then
-							strStorageServerFolderPath = reader.GetString(0)
-							strArchiveFolderPath = reader.GetString(1)
-
-							If String.IsNullOrEmpty(strStorageServerFolderPath) Then
-								ShowErrorMessage("Dataset '" & strDatasetName & "' has an empty Dataset_Folder_Path (using " & strDMSDatabase & ".dbo.V_Dataset_Folder_Paths on server " & strDMSServer & ")")
-							ElseIf String.IsNullOrEmpty(strArchiveFolderPath) Then
-								ShowErrorMessage("Dataset '" & strDatasetName & "' has an empty Archive_Folder_Path (using " & strDMSDatabase & ".dbo.V_Dataset_Folder_Paths on server " & strDMSServer & ")")
-							Else
-								blnSuccess = True
-							End If
-						Else
-							ShowErrorMessage("Dataset '" & strDatasetName & "' not found in " & strDMSDatabase & ".dbo.V_Dataset_Folder_Paths on server " & strDMSServer)
-						End If
-
-					End Using
-				End Using
-
-			End Using
-
-
-		Catch ex As Exception
-			HandleException("Error in LookupDatasetFolderPaths", ex)
-			Return False
-		End Try
-
-		Return blnSuccess
-
-	End Function
-
-	Public Function ProcessDMSDataset(ByVal strDatasetName As String, ByVal strParameterFilePath As String) As Boolean
-
-		Dim strStorageServerFolderPath As String = String.Empty
-		Dim strArchiveFolderPath As String = String.Empty
-
-		If Not LookupDatasetFolderPaths(strDatasetName, strStorageServerFolderPath, strArchiveFolderPath) Then
-			Return False
-		End If
-
-		Return ProcessFile(strStorageServerFolderPath, strArchiveFolderPath, strParameterFilePath, True)
-
-	End Function
-
-	''' <summary>
-	''' Compares the two specified files or two specified folders
-	''' </summary>
-	''' <param name="strInputFilePath">Base file or folder to read</param>
-	''' <param name="strOutputFolderPath">File or folder to compare to strInputFilePath</param>
-	''' <param name="strParameterFilePath"></param>
-	''' <param name="blnResetErrorCode"></param>
-	''' <returns></returns>
-	''' <remarks>If strInputFilePath is a file but strOutputFolderPath is a folder, then looks for a file named strInputFilePath in folder strOutputFolderPath</remarks>
-	Public Overloads Overrides Function ProcessFile(ByVal strInputFilePath As String, ByVal strOutputFolderPath As String, ByVal strParameterFilePath As String, ByVal blnResetErrorCode As Boolean) As Boolean
-
-		Try
-
-			If blnResetErrorCode Then
-				SetLocalErrorCode(eFileComparerErrorCodes.NoError)
-			End If
-
-			Console.WriteLine()
-
-			If Not LoadParameterFileSettings(strParameterFilePath) Then
-				ShowErrorMessage("Parameter file load error: " & strParameterFilePath)
-				If MyBase.ErrorCode = eProcessFilesErrorCodes.NoError Then
-					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile)
-				End If
-				Return False
-			End If
-
-			If String.IsNullOrWhiteSpace(strInputFilePath) Then
-				ShowErrorMessage("Base file path to compare is empty; unable to continue")
-				SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-				Return False
-			End If
-
-			Dim diBaseFolder As DirectoryInfo = New DirectoryInfo(strInputFilePath)
-
-			If diBaseFolder.Exists Then
-
-				' Comparing folder contents
-				If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
-					ShowErrorMessage("Base item is a folder (" & strInputFilePath & "), but the comparison item is empty; unable to continue")
-					SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-					Return False
-				End If
-
-				Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strOutputFolderPath)
-				If Not diComparisonFolder.Exists Then
-					ShowErrorMessage("Base item is a folder (" & strInputFilePath & "), but the comparison folder was not found: " & strOutputFolderPath)
-					SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-					Return False
-				End If
-
-				Return CompareFolders(diBaseFolder.FullName, diComparisonFolder.FullName, mNumberOfSamples, mSampleSizeBytes)
-
-			Else
-				' Comparing files
-
-				Dim fiBaseFile As FileInfo = New FileInfo(strInputFilePath)
-
-				If Not fiBaseFile.Exists Then
-					ShowErrorMessage("Base file to compare not found: " & strInputFilePath)
-					SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-					Return False
-				End If
-
-				If String.IsNullOrWhiteSpace(strOutputFolderPath) Then
-					ShowErrorMessage("Base item is a file (" & strInputFilePath & "), but the comparison item is empty; unable to continue")
-					SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-					Return False
-				End If
-
-				Dim diComparisonFolder As DirectoryInfo = New DirectoryInfo(strOutputFolderPath)
-				Dim strComparisonFilePath As String
-
-				If diComparisonFolder.Exists Then
-					' Will look for a file in the comparison folder with the same name as the input file
-					strComparisonFilePath = Path.Combine(diComparisonFolder.FullName, Path.GetFileName(strInputFilePath))
-				Else
-					Dim fiComparisonFile As FileInfo = New FileInfo(strOutputFolderPath)
-					If Not fiComparisonFile.Exists Then
-						ShowErrorMessage("Base item is a file (" & strInputFilePath & "), but the comparison item was not found: " & strOutputFolderPath)
-						SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath)
-						Return False
-					Else
-						strComparisonFilePath = fiComparisonFile.FullName
-					End If
-				End If
-
-				ShowParameters()
-
-				Return CompareFiles(strInputFilePath, strComparisonFilePath, mNumberOfSamples, mSampleSizeBytes, blnShowMessageIfMatch:=True)
-			End If
-
-
-		Catch ex As Exception
-			HandleException("Error in ProcessFile", ex)
-			Return False
-		End Try
-
-	End Function
-
-	Private Sub SetLocalErrorCode(ByVal eNewErrorCode As eFileComparerErrorCodes)
-		SetLocalErrorCode(eNewErrorCode, False)
-	End Sub
-
-	Private Sub SetLocalErrorCode(ByVal eNewErrorCode As eFileComparerErrorCodes, ByVal blnLeaveExistingErrorCodeUnchanged As Boolean)
-
-		If blnLeaveExistingErrorCodeUnchanged AndAlso mLocalErrorCode <> eFileComparerErrorCodes.NoError Then
-			' An error code is already defined; do not change it
-		Else
-			mLocalErrorCode = eNewErrorCode
-
-			If eNewErrorCode = eFileComparerErrorCodes.NoError Then
-				If MyBase.ErrorCode = eProcessFilesErrorCodes.LocalizedError Then
-					MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.NoError)
-				End If
-			Else
-				MyBase.SetBaseClassErrorCode(eProcessFilesErrorCodes.LocalizedError)
-			End If
-		End If
-
-	End Sub
-
-	Protected Sub ShowParameters()
-		Dim strDisplayValues As String
-
-		strDisplayValues = mNumberOfSamples & "_" & mSampleSizeBytes
-
-		If mLastParameterDisplayValues = strDisplayValues Then
-			' Values have already been displayed
-		Else
-			ShowMessage("Number of samples: " & mNumberOfSamples)
-			ShowMessage("Sample Size:       " & BytesToHumanReadable(mSampleSizeBytes))
-			Console.WriteLine()
-			mLastParameterDisplayValues = strDisplayValues
-		End If
-
-	End Sub
-End Class
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using PRISM;
+
+namespace FileComparisonSampler
+{
+
+    class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
+    {
+
+        public clsSampledFileComparer()
+        {
+            mFileDate = "April 13, 2018";
+            InitializeLocalVariables();
+        }
+
+        public const int DEFAULT_NUMBER_OF_SAMPLES = 10;
+
+        /// <summary>
+        /// Default sample size
+        /// </summary>
+        public const int DEFAULT_SAMPLE_SIZE_KB = 512;
+
+        protected const int MINIMUM_SAMPLE_SIZE_BYTES = 64;
+
+        /// <summary>
+        /// Error codes specialized for this class
+        /// </summary>
+        public enum eFileComparerErrorCodes
+        {
+
+            NoError = 0,
+
+            ErrorReadingInputFile = 1,
+
+            UnspecifiedError = -1,
+        }
+
+        protected int mNumberOfSamples;
+
+        protected long mSampleSizeBytes;
+
+        protected string mLastParameterDisplayValues = string.Empty;
+
+        protected eFileComparerErrorCodes mLocalErrorCode;
+
+        public eFileComparerErrorCodes LocalErrorCode => mLocalErrorCode;
+
+        public int NumberOfSamples
+        {
+            get => mNumberOfSamples;
+            set
+            {
+                if (value < 2)
+                {
+                    value = 2;
+                }
+
+                mNumberOfSamples = value;
+            }
+        }
+
+        public long SampleSizeBytes
+        {
+            get => mSampleSizeBytes;
+            set
+            {
+                if (value < MINIMUM_SAMPLE_SIZE_BYTES)
+                {
+                    value = MINIMUM_SAMPLE_SIZE_BYTES;
+                }
+
+                mSampleSizeBytes = value;
+            }
+        }
+
+        protected string BytesToHumanReadable(long intBytes)
+        {
+            if (intBytes < 10000)
+            {
+                return intBytes.ToString();
+            }
+
+            double dblBytes = intBytes;
+            var lstPrefixes = new List<string> {string.Empty, "KB", "MB", "GB", "TB", "PB"};
+
+            var intPrefixIndex = 0;
+            while (dblBytes >= 10000 && intPrefixIndex < lstPrefixes.Count)
+            {
+                dblBytes /= 1024;
+                intPrefixIndex++;
+            }
+
+            return Math.Round(dblBytes, 0).ToString("0") + " " + lstPrefixes[intPrefixIndex];
+
+        }
+
+        /// <summary>
+        /// Compares two files
+        /// </summary>
+        /// <param name="inputFilePathBase"></param>
+        /// <param name="inputFilePathToCompare"></param>
+        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
+        /// <remarks></remarks>
+        public bool CompareFiles(string inputFilePathBase, string inputFilePathToCompare)
+        {
+            return CompareFiles(inputFilePathBase, inputFilePathToCompare, DEFAULT_NUMBER_OF_SAMPLES, DEFAULT_SAMPLE_SIZE_KB * 1024, true);
+        }
+
+        /// <summary>
+        /// Compares two files
+        /// </summary>
+        /// <param name="inputFilePathBase"></param>
+        /// <param name="inputFilePathToCompare"></param>
+        /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
+        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
+        /// <remarks></remarks>
+        public bool CompareFiles(string inputFilePathBase, string inputFilePathToCompare, int numberOfSamples)
+        {
+            return CompareFiles(inputFilePathBase, inputFilePathToCompare, numberOfSamples, DEFAULT_SAMPLE_SIZE_KB * 1024, true);
+        }
+
+        /// <summary>
+        /// Compares two files
+        /// </summary>
+        /// <param name="inputFilePathBase"></param>
+        /// <param name="inputFilePathToCompare"></param>
+        /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
+        /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
+        /// <param name="showMessageIfMatch">When true, then reports that files matched (always reports if files do not match)</param>
+        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
+        /// <remarks></remarks>
+        public bool CompareFiles(
+            string inputFilePathBase,
+            string inputFilePathToCompare,
+            int numberOfSamples,
+            long sampleSizeBytes,
+            bool showMessageIfMatch)
+        {
+            const int FIVE_HUNDRED_MB = 1024 * 1024 * 512;
+            bool blnSuccess;
+
+            try
+            {
+                if (numberOfSamples < 2)
+                {
+                    numberOfSamples = 2;
+                }
+
+                if (sampleSizeBytes < MINIMUM_SAMPLE_SIZE_BYTES)
+                {
+                    sampleSizeBytes = MINIMUM_SAMPLE_SIZE_BYTES;
+                }
+
+                if (sampleSizeBytes > FIVE_HUNDRED_MB)
+                {
+                    sampleSizeBytes = FIVE_HUNDRED_MB;
+                }
+
+                if (string.IsNullOrWhiteSpace(inputFilePathBase))
+                {
+                    ShowErrorMessage("Base input file path is empty");
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(inputFilePathToCompare))
+                {
+                    ShowErrorMessage("Input file path to compare is empty");
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    return false;
+                }
+
+                ShowMessage("Comparing " + Path.GetFileName(inputFilePathBase));
+                var fiFilePathBase = new FileInfo(inputFilePathBase);
+                var fiFilePathToCompare = new FileInfo(inputFilePathToCompare);
+
+                string strComparisonResult;
+
+                if (numberOfSamples * sampleSizeBytes > fiFilePathBase.Length)
+                {
+                    // Do a full comparison
+                    blnSuccess = CompareFilesComplete(fiFilePathBase, fiFilePathToCompare, out strComparisonResult);
+                }
+                else
+                {
+                    blnSuccess = CompareFilesSampled(fiFilePathBase, fiFilePathToCompare, out strComparisonResult, numberOfSamples,
+                                                     sampleSizeBytes);
+                }
+
+                var pathsCompared = clsPathUtils.CompactPathString(inputFilePathBase) + "  vs. " +
+                                    clsPathUtils.CompactPathString(inputFilePathToCompare);
+
+                if (!blnSuccess)
+                {
+                    if (string.IsNullOrEmpty(strComparisonResult))
+                    {
+                        LogMessage("Files do not match: " + pathsCompared, eMessageTypeConstants.Warning);
+                        Console.WriteLine(" ... *** files do not match ***");
+                    }
+                    else
+                    {
+                        LogMessage(strComparisonResult + ": " + pathsCompared, eMessageTypeConstants.Warning);
+                        Console.WriteLine(" ... *** " + strComparisonResult + " ***");
+                    }
+
+                }
+                else if (showMessageIfMatch && !string.IsNullOrEmpty(strComparisonResult))
+                {
+                    if (string.IsNullOrEmpty(strComparisonResult))
+                    {
+                        LogMessage("Files match: " + pathsCompared);
+                        Console.WriteLine(" ... files match");
+                    }
+                    else
+                    {
+                        LogMessage(strComparisonResult + ": " + pathsCompared);
+                        Console.WriteLine(" ... " + strComparisonResult);
+                    }
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                HandleException("Error in CompareFiles", ex);
+                return false;
+            }
+
+            return blnSuccess;
+        }
+
+        /// <summary>
+        /// Perform a full byte-by-byte comparison of the two files
+        /// </summary>
+        /// <param name="fiFilePathBase"></param>
+        /// <param name="fiFilePathToCompare"></param>
+        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <returns>True if the files match; otherwise false</returns>
+        /// <remarks></remarks>
+        public bool CompareFilesComplete(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult)
+        {
+            if (!FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, out strComparisonResult))
+            {
+                return false;
+            }
+
+            using (var brBaseFile = new BinaryReader(new FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var brComparisonFile = new BinaryReader(new FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            {
+                var dtLastStatusTime = DateTime.UtcNow;
+                var blnFilesMatch = CompareFileSection(brBaseFile, brComparisonFile, out strComparisonResult, -1, -1, "Full comparison",
+                                                       ref dtLastStatusTime);
+                return blnFilesMatch;
+            }
+        }
+
+        /// <summary>
+        /// Perform a full byte-by-byte comparison of a section of two files
+        /// </summary>
+        /// <param name="brBaseFile"></param>
+        /// <param name="brComparisonFile"></param>
+        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <param name="intStartOffset">File offset to start the comparison; use -1 to specify that the entire file should be read</param>
+        /// <param name="sampleSizeBytes">Number of bytes to compare; ignored if intStartOffset is less than 0</param>
+        /// <param name="strSampleDescription">Description of the current section of the file being compared</param>
+        /// <param name="dtLastStatusTime">The last time that a status message was shown (UTC time)</param>
+        /// <returns>True if the files match; otherwise false</returns>
+        /// <remarks></remarks>
+        protected bool CompareFileSection(BinaryReader brBaseFile, BinaryReader brComparisonFile, out string strComparisonResult, long intStartOffset,
+                                          long sampleSizeBytes, string strSampleDescription, ref DateTime dtLastStatusTime)
+        {
+            // 50 MB
+            const int CHUNK_SIZE_BYTES = 1024 * 1024 * 50;
+
+            var dblPercentShown = false;
+            try
+            {
+                strComparisonResult = string.Empty;
+                long intEndOffset;
+                if (intStartOffset < 0)
+                {
+                    // Compare the entire file
+                    intEndOffset = brBaseFile.BaseStream.Length;
+                }
+                else
+                {
+                    if (sampleSizeBytes < 1)
+                    {
+                        sampleSizeBytes = 1;
+                    }
+
+                    intEndOffset = intStartOffset + sampleSizeBytes;
+                    if (intEndOffset > brBaseFile.BaseStream.Length)
+                    {
+                        intEndOffset = brBaseFile.BaseStream.Length;
+                    }
+
+                    if (intStartOffset > 0)
+                    {
+                        if (intStartOffset > brBaseFile.BaseStream.Length)
+                        {
+                            strComparisonResult = "StartOffset is beyond the end of the base file";
+                            return false;
+                        }
+
+                        if (intStartOffset > brComparisonFile.BaseStream.Length)
+                        {
+                            strComparisonResult = "StartOffset is beyond the end of the comparison file";
+                            return false;
+                        }
+
+                        brBaseFile.BaseStream.Position = intStartOffset;
+                        brComparisonFile.BaseStream.Position = intStartOffset;
+                    }
+
+                }
+
+                while (brBaseFile.BaseStream.Position < brBaseFile.BaseStream.Length &&
+                       brBaseFile.BaseStream.Position < intEndOffset)
+                {
+                    var intOffsetPriorToRead = brBaseFile.BaseStream.Position;
+                    int intBytesToRead;
+                    if (brBaseFile.BaseStream.Position + CHUNK_SIZE_BYTES <= intEndOffset)
+                    {
+                        intBytesToRead = CHUNK_SIZE_BYTES;
+                    }
+                    else
+                    {
+                        intBytesToRead = (int)(intEndOffset - brBaseFile.BaseStream.Position);
+                    }
+
+                    if (intBytesToRead == 0)
+                    {
+                        break;
+                    }
+
+                    var bytFile1 = brBaseFile.ReadBytes(intBytesToRead);
+                    var bytFile2 = brComparisonFile.ReadBytes(intBytesToRead);
+                    for (var intIndex = 0; intIndex <= bytFile1.Length - 1; intIndex++)
+                    {
+                        if (bytFile2[intIndex] != bytFile1[intIndex])
+                        {
+                            strComparisonResult = "Mismatch at offset " + intOffsetPriorToRead + intIndex;
+                            return false;
+                        }
+
+                    }
+
+                    if (DateTime.UtcNow.Subtract(dtLastStatusTime).TotalSeconds >= 2)
+                    {
+                        dtLastStatusTime = DateTime.UtcNow;
+                        var dblPercentComplete = (brBaseFile.BaseStream.Position - intStartOffset) / (double)(intEndOffset - intStartOffset) * 100;
+                        if (dblPercentComplete < 100 || dblPercentShown)
+                        {
+                            dblPercentShown = true;
+                            Console.WriteLine("   " + strSampleDescription + ", " + dblPercentComplete.ToString("0.0") + "%");
+                        }
+                        else
+                        {
+                            Console.WriteLine("   " + strSampleDescription);
+                        }
+
+                    }
+
+                }
+
+                strComparisonResult = "Files match";
+            }
+            catch (Exception ex)
+            {
+                strComparisonResult = "Error in CompareFileSection";
+                HandleException(strComparisonResult, ex);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Compares the beginning, end, and optionally one or more middle sections of a file
+        /// </summary>
+        /// <param name="fiFilePathBase"></param>
+        /// <param name="fiFilePathToCompare"></param>
+        /// <param name="strComparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
+        /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
+        /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
+        /// <returns>True if the files match; otherwise false</returns>
+        /// <remarks></remarks>
+        public bool CompareFilesSampled(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult, int numberOfSamples,
+                                        long sampleSizeBytes)
+        {
+            var intSampleNumber = 0;
+            long intBytesExamined = 0;
+
+            if (!FileLengthsMatch(fiFilePathBase, fiFilePathToCompare, out strComparisonResult))
+            {
+                return false;
+            }
+
+            using (var brBaseFile = new BinaryReader(new FileStream(fiFilePathBase.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            using (var brComparisonFile =
+                new BinaryReader(new FileStream(fiFilePathToCompare.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            {
+
+                long intStartOffset = 0;
+                intBytesExamined = intBytesExamined + sampleSizeBytes;
+
+                intSampleNumber++;
+                var strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
+                var dtLastStatusTime = DateTime.UtcNow;
+
+                var blnMatchAtStart = CompareFileSection(brBaseFile, brComparisonFile, out var strComparisonResultAtStart, intStartOffset,
+                                                         sampleSizeBytes, strSampleDescription, ref dtLastStatusTime);
+
+                // Update the start offset to be SampleSizeBytes before the end of the file
+                intStartOffset = fiFilePathBase.Length - sampleSizeBytes;
+                if (intStartOffset < 0)
+                {
+                    intBytesExamined = intBytesExamined + sampleSizeBytes + intStartOffset;
+                    intStartOffset = 0;
+                }
+                else
+                {
+                    intBytesExamined = intBytesExamined + sampleSizeBytes;
+                }
+
+                intSampleNumber++;
+                strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
+
+                var blnMatchAtEnd = CompareFileSection(brBaseFile, brComparisonFile, out var strComparisonResultAtEnd, intStartOffset, sampleSizeBytes,
+                                                       strSampleDescription, ref dtLastStatusTime);
+
+                if (blnMatchAtStart && !blnMatchAtEnd)
+                {
+                    strComparisonResult = "Files match at the beginning but not at the end; " + strComparisonResultAtEnd;
+                    return false;
+                }
+
+                if (blnMatchAtEnd && !blnMatchAtStart)
+                {
+                    strComparisonResult = "Files match at the end but not at the beginning; " + strComparisonResultAtStart;
+                    return false;
+                }
+
+                if (numberOfSamples > 2 && fiFilePathBase.Length > sampleSizeBytes * 2)
+                {
+                    var intMidSectionSamples = numberOfSamples - 2;
+                    var dblSeekLength = fiFilePathBase.Length / (double)(intMidSectionSamples + 1);
+                    var dblCurrentOffset = dblSeekLength - sampleSizeBytes / 2.0;
+
+                    while (dblCurrentOffset < fiFilePathBase.Length)
+                    {
+                        intStartOffset = (long)Math.Round(dblCurrentOffset, 0);
+                        if (intStartOffset < 0)
+                        {
+                            intStartOffset = 0;
+                        }
+
+                        intSampleNumber++;
+                        strSampleDescription = "Sample " + intSampleNumber + " of " + numberOfSamples;
+
+                        var blnMatchInMiddle = CompareFileSection(brBaseFile, brComparisonFile, out strComparisonResult, intStartOffset,
+                                                                  sampleSizeBytes, strSampleDescription, ref dtLastStatusTime);
+
+                        if (!blnMatchInMiddle)
+                        {
+                            strComparisonResult = "Files match at the beginning and end, but not in the middle; " + strComparisonResult;
+                            return false;
+                        }
+
+                        dblCurrentOffset = dblCurrentOffset + dblSeekLength;
+                        intBytesExamined = intBytesExamined + sampleSizeBytes;
+                    }
+
+                }
+            }
+
+
+
+            var dblPercentExamined = intBytesExamined / (double)fiFilePathBase.Length * 100;
+            if (dblPercentExamined > 100)
+            {
+                dblPercentExamined = 100;
+            }
+
+            strComparisonResult = "Files match (examined " + dblPercentExamined.ToString("0.00") + "% of the file)";
+            return true;
+
+        }
+
+        /// <summary>
+        /// Compares each file in folder inputFolderPath1 to files in folder inputFolderPath2
+        /// </summary>
+        /// <param name="inputFolderPath1"></param>
+        /// <param name="inputFolderPath2"></param>
+        /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
+        /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
+        /// <returns>True if the folders Match; false if they do not match</returns>
+        /// <remarks></remarks>
+        public bool CompareFolders(string inputFolderPath1, string inputFolderPath2, int numberOfSamples, long sampleSizeBytes)
+        {
+            var intSourceFilesFound = 0;
+            var intMatchedFileCount = 0;
+            var intMissingFileCount = 0;
+            var intMismatchedFileCount = 0;
+
+            try
+            {
+                inputFolderPath1 = inputFolderPath1.TrimEnd(Path.DirectorySeparatorChar);
+                inputFolderPath2 = inputFolderPath2.TrimEnd(Path.DirectorySeparatorChar);
+
+                var diBaseFolder = new DirectoryInfo(inputFolderPath1);
+
+                if (!diBaseFolder.Exists)
+                {
+                    ShowErrorMessage("Base folder to compare not found: " + inputFolderPath1);
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    return false;
+                }
+
+                var diComparisonFolder = new DirectoryInfo(inputFolderPath2);
+                if (!diComparisonFolder.Exists)
+                {
+                    ShowErrorMessage("Comparison folder not found: " + inputFolderPath2);
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    return false;
+                }
+
+                ShowMessage("Comparing folders: " + diBaseFolder.FullName);
+                ShowMessage("               vs. " + diComparisonFolder.FullName);
+
+                Console.WriteLine();
+                ShowParameters();
+
+                foreach (var fiFile in diBaseFolder.GetFiles("*.*", SearchOption.AllDirectories))
+                {
+                    // Look for the corresponding item in the comparison folder
+                    FileInfo fiComparisonFile;
+                    if (fiFile.Directory == null)
+                    {
+                        ShowMessage("Cannot determine the parent directory path; skipping " + fiFile.FullName);
+                        continue;
+                    }
+
+                    if (fiFile.Directory.FullName == diBaseFolder.FullName)
+                    {
+                        fiComparisonFile = new FileInfo(Path.Combine(inputFolderPath2, fiFile.Name));
+                    }
+                    else
+                    {
+                        var strSubdirectoryAddon = fiFile.Directory.FullName.Substring(diBaseFolder.FullName.Length + 1);
+                        fiComparisonFile = new FileInfo(Path.Combine(inputFolderPath2, strSubdirectoryAddon, fiFile.Name));
+                    }
+
+                    if (!fiComparisonFile.Exists)
+                    {
+                        ShowMessage("  File " + fiFile.Name + " not found in the comparison folder");
+                        intMissingFileCount++;
+                    }
+                    else if (CompareFiles(fiFile.FullName, fiComparisonFile.FullName, numberOfSamples, sampleSizeBytes, true))
+                    {
+                        intMatchedFileCount++;
+                    }
+                    else
+                    {
+                        intMismatchedFileCount++;
+                    }
+
+                    intSourceFilesFound++;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                HandleException("Error in CompareFolders", ex);
+                return false;
+            }
+
+            Console.WriteLine();
+            if (intSourceFilesFound == 0)
+            {
+                ShowErrorMessage("Base folder was empty; nothing to compare: " + inputFolderPath1);
+                return true;
+            }
+
+            if (intMissingFileCount == 0 && intMismatchedFileCount == 0)
+            {
+                ShowMessage("Folders match; checked " + intSourceFilesFound + " file(s)");
+                return true;
+            }
+
+            if (intMissingFileCount == 0 && intMismatchedFileCount > 0)
+            {
+                ShowMessage("Folders do not match; Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+                return false;
+            }
+
+            if (intMissingFileCount > 0)
+            {
+                ShowMessage("Comparison folder is missing " + intMissingFileCount + " file(s) that the base folder contains");
+                ShowMessage("Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+                return false;
+            }
+
+            Console.WriteLine("Note: unexpected logic encountered in If-Else-EndIf block in CompareFolders");
+            ShowMessage("Folders do not match; Mis-matched file count: " + intMismatchedFileCount + "; Matched file count: " + intMatchedFileCount);
+            return false;
+
+        }
+
+        public bool FileLengthsMatch(FileInfo fiFilePathBase, FileInfo fiFilePathToCompare, out string strComparisonResult)
+        {
+            if (!fiFilePathBase.Exists)
+            {
+                strComparisonResult = "Base file to compare not found: " + fiFilePathBase.FullName;
+                return false;
+            }
+
+            if (!fiFilePathToCompare.Exists)
+            {
+                strComparisonResult = "Comparison file not found: " + fiFilePathToCompare.FullName;
+                return false;
+            }
+
+            if (fiFilePathBase.Length != fiFilePathToCompare.Length)
+            {
+                strComparisonResult = string.Format("Base file is {0:#,##0.0} KB; comparison file is {1:#,##0.0} KB",
+                                                    fiFilePathBase.Length / 1024.0,
+                                                    fiFilePathToCompare.Length / 1024.0);
+
+
+
+                return false;
+            }
+
+            strComparisonResult = "File lengths match";
+            return true;
+
+        }
+
+        public override string GetErrorMessage()
+        {
+            // Returns "" if no error
+            string strErrorMessage;
+            if (ErrorCode == eProcessFilesErrorCodes.LocalizedError ||
+                ErrorCode == eProcessFilesErrorCodes.NoError)
+            {
+                switch (mLocalErrorCode)
+                {
+                    case eFileComparerErrorCodes.NoError:
+                        strErrorMessage = "";
+                        break;
+                    case eFileComparerErrorCodes.ErrorReadingInputFile:
+                        strErrorMessage = "Error reading input file";
+                        break;
+                    default:
+                        strErrorMessage = "Unknown error state";
+                        break;
+                }
+            }
+            else
+            {
+                strErrorMessage = GetBaseClassErrorMessage();
+            }
+
+            return strErrorMessage;
+        }
+
+        private void InitializeLocalVariables()
+        {
+            mNumberOfSamples = DEFAULT_NUMBER_OF_SAMPLES;
+            mSampleSizeBytes = DEFAULT_SAMPLE_SIZE_KB * 1024;
+            mLocalErrorCode = eFileComparerErrorCodes.NoError;
+        }
+
+        private bool LoadParameterFileSettings(string parameterFilePath)
+        {
+            const string OPTIONS_SECTION = "Options";
+            var objSettingsFile = new XmlSettingsFileAccessor();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(parameterFilePath))
+                {
+                    // No parameter file specified; nothing to load
+                    return true;
+                }
+
+                if (!File.Exists(parameterFilePath))
+                {
+                    // See if parameterFilePath points to a file in the same directory as the application
+
+                    parameterFilePath = Path.Combine(GetAppFolderPath(), Path.GetFileName(parameterFilePath));
+                    if (!File.Exists(parameterFilePath))
+                    {
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.ParameterFileNotFound);
+                        return false;
+                    }
+
+                }
+
+                if (objSettingsFile.LoadSettings(parameterFilePath))
+                {
+                    if (!objSettingsFile.SectionPresent(OPTIONS_SECTION))
+                    {
+                        ShowWarning("The node <section name=\"" + OPTIONS_SECTION + "\"> " +
+                                   "was not found in the parameter file: " + parameterFilePath);
+
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile);
+                        return false;
+                    }
+
+                    // Me.SettingName = objSettingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                HandleException("Error in LoadParameterFileSettings", ex);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool LookupDatasetFolderPaths(string strDatasetName, out string strStorageServerFolderPath, out string strArchiveFolderPath)
+        {
+            return LookupDatasetFolderPaths(strDatasetName, out strStorageServerFolderPath, out strArchiveFolderPath, "Gigasax", "DMS5");
+        }
+
+        private bool LookupDatasetFolderPaths(
+            string strDatasetName,
+            out string strStorageServerFolderPath,
+            out string strArchiveFolderPath,
+            string strDMSServer,
+            string strDMSDatabase)
+        {
+
+            strStorageServerFolderPath = string.Empty;
+            strArchiveFolderPath = string.Empty;
+
+            try
+            {
+                var connectionString = "Data Source=" + strDMSServer + ";Initial Catalog=" + strDMSDatabase + ";Integrated Security=SSPI;";
+
+                var dbTools = new clsDBTools(connectionString);
+
+
+                var sqlQuery = "SELECT Dataset_Folder_Path, Archive_Folder_Path " +
+                               "FROM V_Dataset_Folder_Paths " +
+                               "WHERE (Dataset = '" + strDatasetName + "')";
+
+                dbTools.GetQueryResults(sqlQuery, out var lstResults, "LookupDatasetFolderPaths");
+
+                if (lstResults.Count > 0)
+                {
+                    var firstResult = lstResults.First();
+
+                    strStorageServerFolderPath = firstResult[0];
+                    strArchiveFolderPath = firstResult[1];
+                    if (string.IsNullOrEmpty(strStorageServerFolderPath))
+                    {
+                        ShowErrorMessage("Dataset '" + strDatasetName + "' has an empty Dataset_Folder_Path " +
+                                         "(using " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths on server " + strDMSServer + ")");
+                    }
+                    else if (string.IsNullOrEmpty(strArchiveFolderPath))
+                    {
+                        ShowErrorMessage("Dataset '" + strDatasetName + "' has an empty Archive_Folder_Path " +
+                                         "(using " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths on server " + strDMSServer + ")");
+                    }
+                    else
+                    {
+                        return true;
+                    }
+
+                }
+                else
+                {
+                    ShowErrorMessage("Dataset '" + strDatasetName + "' " +
+                                     "not found in " + strDMSDatabase + ".dbo.V_Dataset_Folder_Paths " +
+                                     "on server " + strDMSServer);
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                HandleException("Error in LookupDatasetFolderPaths", ex);
+                return false;
+            }
+
+
+        }
+
+        public bool ProcessDMSDataset(string strDatasetName)
+        {
+            if (!LookupDatasetFolderPaths(strDatasetName, out var strStorageServerFolderPath, out var strArchiveFolderPath))
+            {
+                return false;
+            }
+
+            return ProcessFile(strStorageServerFolderPath, strArchiveFolderPath, "", true);
+        }
+
+        /// <summary>
+        /// Compares the two specified files or two specified folders
+        /// </summary>
+        /// <param name="inputFilePath">Base file or folder to read</param>
+        /// <param name="outputFolderPath">File or folder to compare to inputFilePath</param>
+        /// <param name="parameterFilePath">Parameter file path (unused)</param>
+        /// <param name="resetErrorCode"></param>
+        /// <returns></returns>
+        /// <remarks>If inputFilePath is a file but outputFolderPath is a folder, then looks for a file named inputFilePath in folder outputFolderPath</remarks>
+        public override bool ProcessFile(string inputFilePath, string outputFolderPath, string parameterFilePath, bool resetErrorCode)
+        {
+            try
+            {
+                if (resetErrorCode)
+                {
+                    SetLocalErrorCode(eFileComparerErrorCodes.NoError);
+                }
+
+                Console.WriteLine();
+                if (!LoadParameterFileSettings(parameterFilePath))
+                {
+                    ShowErrorMessage("Parameter file load error: " + parameterFilePath);
+                    if (ErrorCode == eProcessFilesErrorCodes.NoError)
+                    {
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile);
+                    }
+
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(inputFilePath))
+                {
+                    ShowErrorMessage("Base file path to compare is empty; unable to continue");
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    return false;
+                }
+
+                var diBaseFolder = new DirectoryInfo(inputFilePath);
+                if (diBaseFolder.Exists)
+                {
+                    // Comparing folder contents
+                    if (string.IsNullOrWhiteSpace(outputFolderPath))
+                    {
+                        ShowErrorMessage("Base item is a folder (" + inputFilePath + "), but the comparison item is empty; unable to continue");
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        return false;
+                    }
+
+                    var diComparisonFolder = new DirectoryInfo(outputFolderPath);
+                    if (!diComparisonFolder.Exists)
+                    {
+                        ShowErrorMessage("Base item is a folder (" + inputFilePath + "), but the comparison folder was not found: " +
+                                         outputFolderPath);
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        return false;
+                    }
+
+                    return CompareFolders(diBaseFolder.FullName, diComparisonFolder.FullName, mNumberOfSamples, mSampleSizeBytes);
+                }
+                else
+                {
+                    // Comparing files
+                    var fiBaseFile = new FileInfo(inputFilePath);
+                    if (!fiBaseFile.Exists)
+                    {
+                        ShowErrorMessage("Base file to compare not found: " + inputFilePath);
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        return false;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(outputFolderPath))
+                    {
+                        ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item is empty; unable to continue");
+                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        return false;
+                    }
+
+                    var diComparisonFolder = new DirectoryInfo(outputFolderPath);
+                    string strComparisonFilePath;
+                    if (diComparisonFolder.Exists)
+                    {
+                        // Will look for a file in the comparison folder with the same name as the input file
+                        strComparisonFilePath = Path.Combine(diComparisonFolder.FullName, Path.GetFileName(inputFilePath));
+                    }
+                    else
+                    {
+                        var fiComparisonFile = new FileInfo(outputFolderPath);
+                        if (!fiComparisonFile.Exists)
+                        {
+                            ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item was not found: " +
+                                             outputFolderPath);
+                            SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                            return false;
+                        }
+
+                        strComparisonFilePath = fiComparisonFile.FullName;
+
+                    }
+
+                    ShowParameters();
+
+                    return CompareFiles(inputFilePath, strComparisonFilePath, mNumberOfSamples, mSampleSizeBytes, true);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                HandleException("Error in ProcessFile", ex);
+                return false;
+            }
+
+        }
+
+        private void SetLocalErrorCode(eFileComparerErrorCodes eNewErrorCode, bool blnLeaveExistingErrorCodeUnchanged = false)
+        {
+            if (blnLeaveExistingErrorCodeUnchanged && mLocalErrorCode != eFileComparerErrorCodes.NoError)
+            {
+                // An error code is already defined; do not change it
+                return;
+            }
+
+            mLocalErrorCode = eNewErrorCode;
+            if (eNewErrorCode == eFileComparerErrorCodes.NoError)
+            {
+                if (ErrorCode == eProcessFilesErrorCodes.LocalizedError)
+                {
+                    SetBaseClassErrorCode(eProcessFilesErrorCodes.NoError);
+                }
+
+            }
+            else
+            {
+                SetBaseClassErrorCode(eProcessFilesErrorCodes.LocalizedError);
+            }
+
+        }
+
+        protected void ShowParameters()
+        {
+            var strDisplayValues = mNumberOfSamples + "_" + mSampleSizeBytes;
+
+            if (mLastParameterDisplayValues == strDisplayValues)
+            {
+                // Values have already been displayed
+            }
+            else
+            {
+                ShowMessage("Number of samples: " + mNumberOfSamples);
+                ShowMessage("Sample Size:       " + BytesToHumanReadable(mSampleSizeBytes));
+                Console.WriteLine();
+                mLastParameterDisplayValues = strDisplayValues;
+            }
+        }
+
+    }
+}

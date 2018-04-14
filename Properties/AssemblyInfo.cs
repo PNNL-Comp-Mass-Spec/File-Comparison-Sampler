@@ -1,34 +1,33 @@
-﻿Imports System
-Imports System.Reflection
-Imports System.Runtime.InteropServices
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-' General Information about an assembly is controlled through the following 
-' set of attributes. Change these attribute values to modify the information
-' associated with an assembly.
+// General Information about an assembly is controlled through the following
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+[assembly: AssemblyTitle("FileComparisonSampler")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("PNNL")]
+[assembly: AssemblyProduct("FileComparisonSampler")]
+[assembly: AssemblyCopyright("Copyright © PNNL 2018")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
 
-' Review the values of the assembly attributes
+// Setting ComVisible to false makes the types in this assembly not visible
+// to COM components.  If you need to access a type in this assembly from
+// COM, set the ComVisible attribute to true on that type.
+[assembly: ComVisible(false)]
 
-<Assembly: AssemblyTitle("FileCompareSampler")> 
-<Assembly: AssemblyDescription("")> 
-<Assembly: AssemblyCompany("PNNL")> 
-<Assembly: AssemblyProduct("FileCompareSampler")> 
-<Assembly: AssemblyCopyright("Copyright © PNNL 2013")> 
-<Assembly: AssemblyTrademark("")> 
+// The following GUID is for the ID of the typelib if this project is exposed to COM
+[assembly: Guid("3a9094cc-ec03-424a-bd71-cb04516ca8c7")]
 
-<Assembly: ComVisible(False)>
+// Version information for an assembly consists of the following four values:
+//
+//     Major Version
+//     Minor Version
+//     Build Number
+//     Revision
+//
+[assembly: AssemblyVersion("1.2.*")]
 
-'The following GUID is for the ID of the typelib if this project is exposed to COM
-<Assembly: Guid("ea2895b4-5363-47e1-b5a4-fea419b9d976")> 
-
-' Version information for an assembly consists of the following four values:
-'
-'      Major Version
-'      Minor Version 
-'      Build Number
-'      Revision
-'
-' You can specify all the values or you can default the Build and Revision Numbers 
-' by using the '*' as shown below:
-' <Assembly: AssemblyVersion("1.0.*")> 
-
-<Assembly: AssemblyVersion("1.1.*")> 
