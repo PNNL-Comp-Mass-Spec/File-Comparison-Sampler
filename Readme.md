@@ -11,6 +11,8 @@ identically named files in the second directory.
 
 The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
 
+[![Build status](https://ci.appveyor.com/api/projects/status/n4ebkr0xco519ecb?svg=true)](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler)
+
 ## Installation
 
 * Download File-Comparison-Sampler.zip from [AppVeyor](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
