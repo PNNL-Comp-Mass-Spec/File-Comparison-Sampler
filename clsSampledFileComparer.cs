@@ -791,7 +791,7 @@ namespace FileComparisonSampler
             {
                 var connectionString = "Data Source=" + dmsServer + ";Initial Catalog=" + dmsDatabase + ";Integrated Security=SSPI;";
 
-                var dbTools = new clsDBTools(connectionString);
+                var dbTools = new DBTools(connectionString);
 
 
                 var sqlQuery = "SELECT Dataset_Folder_Path, Archive_Folder_Path " +

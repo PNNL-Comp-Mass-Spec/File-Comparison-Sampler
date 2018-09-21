@@ -32,7 +32,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "April 13, 2018";
+        public const string PROGRAM_DATE = "September 20, 2018";
 
         private static string mInputFileOrDirectoryPath;
 
@@ -202,7 +202,7 @@ namespace FileComparisonSampler
                 // Make sure no invalid parameters are present
                 if (commandLineParser.InvalidParametersPresent(validParameters))
                 {
-                    ShowErrorMessage("Invalid commmand line parameters",
+                    ShowErrorMessage("Invalid command line parameters",
                                      (from item in commandLineParser.InvalidParameters(validParameters) select "/" + item).ToList());
                     return false;
                 }
@@ -348,7 +348,7 @@ namespace FileComparisonSampler
                 Console.WriteLine("Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/");
                 Console.WriteLine();
 
-                clsProgRunner.SleepMilliseconds(1000);
+                ProgRunner.SleepMilliseconds(1000);
             }
             catch (Exception ex)
             {
