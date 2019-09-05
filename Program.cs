@@ -32,7 +32,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "September 20, 2018";
+        public const string PROGRAM_DATE = "September 5, 2019";
 
         private static string mInputFileOrDirectoryPath;
 
@@ -45,7 +45,7 @@ namespace FileComparisonSampler
 
         private static string mLogFilePath = string.Empty;
 
-        private static string mLogFolderPath = string.Empty;
+        private static string mLogDirectoryPath = string.Empty;
 
         private static int mNumberOfSamples;
 
@@ -72,7 +72,7 @@ namespace FileComparisonSampler
             mSampleSizeBytes = clsSampledFileComparer.DEFAULT_SAMPLE_SIZE_KB * 1024;
             mLogMessagesToFile = false;
             mLogFilePath = string.Empty;
-            mLogFolderPath = string.Empty;
+            mLogDirectoryPath = string.Empty;
 
             try
             {
@@ -108,7 +108,7 @@ namespace FileComparisonSampler
                     IgnoreErrorsWhenUsingWildcardMatching = true,
                     LogMessagesToFile = mLogMessagesToFile,
                     LogFilePath = mLogFilePath,
-                    LogFolderPath = mLogFolderPath
+                    LogDirectoryPath = mLogDirectoryPath
                 };
 
                 mProcessingClass.ProgressUpdate += mProcessingClass_ProgressChanged;
@@ -179,7 +179,7 @@ namespace FileComparisonSampler
 
         private static string GetAppVersion()
         {
-            return PRISM.FileProcessor.ProcessFilesOrFoldersBase.GetAppVersion(PROGRAM_DATE);
+            return PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppVersion(PROGRAM_DATE);
         }
 
         private static bool SetOptionsUsingCommandLineParameters(clsParseCommandLine commandLineParser)
@@ -264,7 +264,7 @@ namespace FileComparisonSampler
                     mLogMessagesToFile = true;
 
                     if (!string.IsNullOrEmpty(value))
-                        mLogFolderPath = value;
+                        mLogDirectoryPath = value;
 
                 }
 
@@ -291,7 +291,7 @@ namespace FileComparisonSampler
         {
             try
             {
-                var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrFoldersBase.GetAppPath());
+                var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
 
                 Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
                                       "This program compares two or more files (typically in separate directories) to check whether the " +

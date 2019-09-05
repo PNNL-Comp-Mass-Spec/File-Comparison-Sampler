@@ -185,14 +185,14 @@ namespace FileComparisonSampler
                 if (string.IsNullOrWhiteSpace(inputFilePathBase))
                 {
                     ShowErrorMessage("Base input file path is empty");
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
                 if (string.IsNullOrWhiteSpace(inputFilePathToCompare))
                 {
                     ShowErrorMessage("Input file path to compare is empty");
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
@@ -222,7 +222,7 @@ namespace FileComparisonSampler
                         Console.WriteLine(" ... *** files do not match ***");
                         if (LogMessagesToFile)
                         {
-                            LogMessage("Files do not match: " + pathsCompared, eMessageTypeConstants.Warning);
+                            LogMessage("Files do not match: " + pathsCompared, MessageTypeConstants.Warning);
                         }
                     }
                     else
@@ -230,7 +230,7 @@ namespace FileComparisonSampler
                         Console.WriteLine(" ... *** " + comparisonResult + " ***");
                         if (LogMessagesToFile)
                         {
-                            LogMessage(comparisonResult + ": " + pathsCompared, eMessageTypeConstants.Warning);
+                            LogMessage(comparisonResult + ": " + pathsCompared, MessageTypeConstants.Warning);
                         }
                     }
 
@@ -549,7 +549,7 @@ namespace FileComparisonSampler
                 if (!baseDirectory.Exists)
                 {
                     ShowErrorMessage("Base directory to compare not found: " + inputDirectoryPath1);
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
@@ -557,7 +557,7 @@ namespace FileComparisonSampler
                 if (!comparisonDirectory.Exists)
                 {
                     ShowErrorMessage("Comparison directory not found: " + inputDirectoryPath2);
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
@@ -689,8 +689,8 @@ namespace FileComparisonSampler
         {
 
             string errorMessage;
-            if (ErrorCode == eProcessFilesErrorCodes.LocalizedError ||
-                ErrorCode == eProcessFilesErrorCodes.NoError)
+            if (ErrorCode == ProcessFilesErrorCodes.LocalizedError ||
+                ErrorCode == ProcessFilesErrorCodes.NoError)
             {
                 switch (mLocalErrorCode)
                 {
@@ -737,10 +737,10 @@ namespace FileComparisonSampler
                 {
                     // See if parameterFilePath points to a file in the same directory as the application
 
-                    parameterFilePath = Path.Combine(GetAppFolderPath(), Path.GetFileName(parameterFilePath));
+                    parameterFilePath = Path.Combine(GetAppDirectoryPath(), Path.GetFileName(parameterFilePath));
                     if (!File.Exists(parameterFilePath))
                     {
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.ParameterFileNotFound);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.ParameterFileNotFound);
                         return false;
                     }
 
@@ -753,7 +753,7 @@ namespace FileComparisonSampler
                         ShowWarning("The node <section name=\"" + OPTIONS_SECTION + "\"> " +
                                    "was not found in the parameter file: " + parameterFilePath);
 
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidParameterFile);
                         return false;
                     }
 
@@ -878,9 +878,9 @@ namespace FileComparisonSampler
                 if (!LoadParameterFileSettings(parameterFilePath))
                 {
                     ShowErrorMessage("Parameter file load error: " + parameterFilePath);
-                    if (ErrorCode == eProcessFilesErrorCodes.NoError)
+                    if (ErrorCode == ProcessFilesErrorCodes.NoError)
                     {
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidParameterFile);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidParameterFile);
                     }
 
                     return false;
@@ -889,7 +889,7 @@ namespace FileComparisonSampler
                 if (string.IsNullOrWhiteSpace(inputFilePath))
                 {
                     ShowErrorMessage("Base file path to compare is empty; unable to continue");
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                     return false;
                 }
 
@@ -900,7 +900,7 @@ namespace FileComparisonSampler
                     if (string.IsNullOrWhiteSpace(outputDirectoryPath))
                     {
                         ShowErrorMessage("Base item is a directory (" + inputFilePath + "), but the comparison item is empty; unable to continue");
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
@@ -909,7 +909,7 @@ namespace FileComparisonSampler
                     {
                         ShowErrorMessage("Base item is a directory (" + inputFilePath + "), but the comparison directory was not found: " +
                                          outputDirectoryPath);
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
@@ -922,14 +922,14 @@ namespace FileComparisonSampler
                     if (!baseFile.Exists)
                     {
                         ShowErrorMessage("Base file to compare not found: " + inputFilePath);
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
                     if (string.IsNullOrWhiteSpace(outputDirectoryPath))
                     {
                         ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item is empty; unable to continue");
-                        SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                        SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                         return false;
                     }
 
@@ -947,7 +947,7 @@ namespace FileComparisonSampler
                         {
                             ShowErrorMessage("Base item is a file (" + inputFilePath + "), but the comparison item was not found: " +
                                              outputDirectoryPath);
-                            SetBaseClassErrorCode(eProcessFilesErrorCodes.InvalidInputFilePath);
+                            SetBaseClassErrorCode(ProcessFilesErrorCodes.InvalidInputFilePath);
                             return false;
                         }
 
@@ -980,15 +980,15 @@ namespace FileComparisonSampler
             mLocalErrorCode = eNewErrorCode;
             if (eNewErrorCode == eFileComparerErrorCodes.NoError)
             {
-                if (ErrorCode == eProcessFilesErrorCodes.LocalizedError)
+                if (ErrorCode == ProcessFilesErrorCodes.LocalizedError)
                 {
-                    SetBaseClassErrorCode(eProcessFilesErrorCodes.NoError);
+                    SetBaseClassErrorCode(ProcessFilesErrorCodes.NoError);
                 }
 
             }
             else
             {
-                SetBaseClassErrorCode(eProcessFilesErrorCodes.LocalizedError);
+                SetBaseClassErrorCode(ProcessFilesErrorCodes.LocalizedError);
             }
 
         }
