@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using PRISM;
+using PRISMDatabaseUtils;
 
 namespace FileComparisonSampler
 {
-
     class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
     {
         #region "Constants and enums"
@@ -117,7 +117,6 @@ namespace FileComparisonSampler
             }
 
             return Math.Round(scaledBytes, 0).ToString("0") + " " + sizeUnits[prefixIndex];
-
         }
 
         /// <summary>
@@ -233,7 +232,6 @@ namespace FileComparisonSampler
                             LogMessage(comparisonResult + ": " + pathsCompared, MessageTypeConstants.Warning);
                         }
                     }
-
                 }
                 else if (showMessageIfMatch && !string.IsNullOrEmpty(comparisonResult))
                 {
@@ -253,9 +251,7 @@ namespace FileComparisonSampler
                             LogMessage(comparisonResult + ": " + pathsCompared);
                         }
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -348,7 +344,6 @@ namespace FileComparisonSampler
                         baseFileReader.BaseStream.Position = startOffset;
                         comparisonFileReader.BaseStream.Position = startOffset;
                     }
-
                 }
 
                 while (baseFileReader.BaseStream.Position < baseFileReader.BaseStream.Length &&
@@ -379,7 +374,6 @@ namespace FileComparisonSampler
                             comparisonResult = "Mismatch at offset " + offsetPriorToRead + index;
                             return false;
                         }
-
                     }
 
                     if (DateTime.UtcNow.Subtract(lastStatusTime).TotalSeconds >= 2)
@@ -396,9 +390,7 @@ namespace FileComparisonSampler
                         {
                             Console.Write("  " + percentComplete.ToString("0.0") + "%");
                         }
-
                     }
-
                 }
 
                 comparisonResult = "Files match";
@@ -508,7 +500,6 @@ namespace FileComparisonSampler
                         currentOffsetDouble += seekLengthDouble;
                         bytesExamined = bytesExamined + sampleSizeBytes;
                     }
-
                 }
             }
 
@@ -520,7 +511,6 @@ namespace FileComparisonSampler
 
             comparisonResult = "Files match (examined " + percentExamined.ToString("0.00") + "% of the file)";
             return true;
-
         }
 
         /// <summary>
@@ -604,7 +594,6 @@ namespace FileComparisonSampler
 
                     sourceFilesFound++;
                 }
-
             }
             catch (Exception ex)
             {
@@ -641,7 +630,6 @@ namespace FileComparisonSampler
             Console.WriteLine("Note: unexpected logic encountered in If-Else-EndIf block in CompareDirectories");
             ShowMessage("Directories do not match; Mis-matched file count: " + mismatchedFileCount + "; Matched file count: " + matchedFileCount);
             return false;
-
         }
 
         /// <summary>
@@ -671,14 +659,11 @@ namespace FileComparisonSampler
                                                  baseFile.Length / 1024.0,
                                                  comparisonFile.Length / 1024.0);
 
-
-
                 return false;
             }
 
             comparisonResult = "File lengths match";
             return true;
-
         }
 
         /// <summary>
@@ -687,7 +672,6 @@ namespace FileComparisonSampler
         /// <returns>Error message, or empty string if no error</returns>
         public override string GetErrorMessage()
         {
-
             string errorMessage;
             if (ErrorCode == ProcessFilesErrorCodes.LocalizedError ||
                 ErrorCode == ProcessFilesErrorCodes.NoError)
@@ -743,7 +727,6 @@ namespace FileComparisonSampler
                         SetBaseClassErrorCode(ProcessFilesErrorCodes.ParameterFileNotFound);
                         return false;
                     }
-
                 }
 
                 if (settingsFile.LoadSettings(parameterFilePath))
@@ -758,9 +741,7 @@ namespace FileComparisonSampler
                     }
 
                     // Me.SettingName = settingsFile.GetParam(OPTIONS_SECTION, "HeaderLineChar", Me.SettingName)
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -783,7 +764,6 @@ namespace FileComparisonSampler
             string dmsServer,
             string dmsDatabase)
         {
-
             storageServerDirectoryPath = string.Empty;
             archiveDirectoryPath = string.Empty;
 
@@ -791,14 +771,14 @@ namespace FileComparisonSampler
             {
                 var connectionString = "Data Source=" + dmsServer + ";Initial Catalog=" + dmsDatabase + ";Integrated Security=SSPI;";
 
-                var dbTools = new DBTools(connectionString);
+                var dbTools = DbToolsFactory.GetDBTools(connectionString);
 
 
                 var sqlQuery = "SELECT Dataset_Folder_Path, Archive_Folder_Path " +
                                "FROM V_Dataset_Folder_Paths " +
                                "WHERE (Dataset = '" + datasetName + "')";
 
-                dbTools.GetQueryResults(sqlQuery, out var queryResults, "LookupDatasetFolderPaths");
+                dbTools.GetQueryResults(sqlQuery, out var queryResults);
 
                 var sourceViewAndDatabase = dmsDatabase + ".dbo.V_Dataset_Folder_Paths on server " + dmsServer;
 
@@ -822,7 +802,6 @@ namespace FileComparisonSampler
                     {
                         return true;
                     }
-
                 }
                 else
                 {
@@ -836,8 +815,6 @@ namespace FileComparisonSampler
                 HandleException("Error in LookupDatasetDirectoryPaths", ex);
                 return false;
             }
-
-
         }
 
         /// <summary>
@@ -959,14 +936,12 @@ namespace FileComparisonSampler
 
                     return CompareFiles(inputFilePath, comparisonFilePath, mNumberOfSamples, mSampleSizeBytes, true);
                 }
-
             }
             catch (Exception ex)
             {
                 HandleException("Error in ProcessFile", ex);
                 return false;
             }
-
         }
 
         private void SetLocalErrorCode(eFileComparerErrorCodes eNewErrorCode, bool leaveExistingErrorCodeUnchanged = false)
@@ -990,7 +965,6 @@ namespace FileComparisonSampler
             {
                 SetBaseClassErrorCode(ProcessFilesErrorCodes.LocalizedError);
             }
-
         }
 
         protected void ShowParameters()
@@ -1009,6 +983,5 @@ namespace FileComparisonSampler
                 mLastParameterDisplayValues = displayValues;
             }
         }
-
     }
 }
