@@ -16,9 +16,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using PRISM;
 
 namespace FileComparisonSampler
@@ -28,28 +26,10 @@ namespace FileComparisonSampler
     /// </summary>
     class Program
     {
-
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "September 5, 2019";
-
-        private static string mInputFileOrDirectoryPath;
-
-        private static string mComparisonFileOrDirectoryPath;
-
-        // Unused:
-        // private static string mParameterFilePath;
-
-        private static bool mLogMessagesToFile;
-
-        private static string mLogFilePath = string.Empty;
-
-        private static string mLogDirectoryPath = string.Empty;
-
-        private static int mNumberOfSamples;
-
-        private static long mSampleSizeBytes;
+        public const string PROGRAM_DATE = "February 24, 2020";
 
         private static clsSampledFileComparer mProcessingClass;
 
@@ -64,73 +44,95 @@ namespace FileComparisonSampler
         /// <returns>0 if no error, error code if an error</returns>
         static int Main(string[] args)
         {
-            // Initialize the options
-            mInputFileOrDirectoryPath = string.Empty;
-            mComparisonFileOrDirectoryPath = string.Empty;
-            // Unused: mParameterFilePath = string.Empty;
-            mNumberOfSamples = clsSampledFileComparer.DEFAULT_NUMBER_OF_SAMPLES;
-            mSampleSizeBytes = clsSampledFileComparer.DEFAULT_SAMPLE_SIZE_KB * 1024;
-            mLogMessagesToFile = false;
-            mLogFilePath = string.Empty;
-            mLogDirectoryPath = string.Empty;
+            var progName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+            var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
+            var cmdLineParser = new CommandLineParser<CommandLineOptions>(progName, GetAppVersion());
+
+            cmdLineParser.ProgramInfo =
+                "This program compares two or more files (typically in separate directories) to check whether the " +
+                "start of the files match, the end of the files match, and selected sections inside the files also match. " +
+                "Useful for comparing large files without reading the entire file. " +
+                "Alternatively, you can provide two directory paths and the program will compare all of the files " +
+                "in the first directory to the identically named files in the second directory.";
+
+            cmdLineParser.ContactInfo =
+                "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2013" +
+                Environment.NewLine + Environment.NewLine +
+                "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
+                "Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/";
+
+            cmdLineParser.UsageExamples.Add(
+                "Program syntax 1: compare two files; in this case the filenames cannot have wildcards" +
+                Environment.NewLine +
+                " " + exeName + " FilePath1 FilePath2" + Environment.NewLine +
+                " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
+                " [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]" + Environment.NewLine +
+                " [/L[:LogFilePath]] [/LogFolder:LogFolderPath]");
+
+            cmdLineParser.UsageExamples.Add("Program syntax 2: compare two directories (including all subdirectories)" + Environment.NewLine +
+                " " + exeName + " DirectoryPath1 DirectoryPath2" + Environment.NewLine +
+                " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
+                " [/L] [/LogFolder]");
+
+            cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
+                "Program syntax 3: compare a set of files in one directory to identically named files in a separate directory. " +
+                "Use wildcards in FileMatchSpec to specify the files to examine") + Environment.NewLine +
+                " " + exeName + " FileMatchSpec DirectoryPathToExamine" + Environment.NewLine +
+                " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
+                " [/L] [/LogFolder]");
+
+            cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
+                "Program syntax 4: compare a DMS dataset's files between the storage server and the archive. " +
+                "The first argument must be DMS; the second argument is the Dataset Name.") + Environment.NewLine +
+                " " + exeName + " DMS DatasetNameToCheck" + Environment.NewLine +
+                " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
+                " [/L] [/LogFolder]");
+
+            var results = cmdLineParser.ParseArgs(args);
+            var options = results.ParsedResults;
+
+            if (!results.Success || !options.Validate())
+            {
+                //ShowErrorMessage(
+                //    "You must specify two files or two directories or a file match spec and a directory path or the word DMS followed by a dataset name");
+                ProgRunner.SleepMilliseconds(1000);
+                return -1;
+            }
 
             try
             {
-                var proceed = false;
                 int returnCode;
-
-                var commandLineParser = new clsParseCommandLine();
-
-                if (!commandLineParser.ParseCommandLine())
-                {
-                    ShowProgramHelp();
-                    return -1;
-                }
-
-                if (SetOptionsUsingCommandLineParameters(commandLineParser))
-                {
-                    proceed = true;
-                }
-
-                if (!proceed ||
-                    commandLineParser.NeedToShowHelp ||
-                    commandLineParser.ParameterCount + commandLineParser.NonSwitchParameterCount == 0 ||
-                    mInputFileOrDirectoryPath.Length == 0)
-                {
-                    ShowProgramHelp();
-                    return -1;
-                }
 
                 mProcessingClass = new clsSampledFileComparer
                 {
-                    NumberOfSamples = mNumberOfSamples,
-                    SampleSizeBytes = mSampleSizeBytes,
+                    NumberOfSamples = options.NumberOfSamples,
+                    SampleSizeBytes = options.SampleSizeBytes,
                     IgnoreErrorsWhenUsingWildcardMatching = true,
-                    LogMessagesToFile = mLogMessagesToFile,
-                    LogFilePath = mLogFilePath,
-                    LogDirectoryPath = mLogDirectoryPath
+                    LogMessagesToFile = options.LogMessagesToFile,
+                    LogFilePath = options.LogFilePath,
+                    LogDirectoryPath = options.LogDirectoryPath
                 };
 
                 mProcessingClass.ProgressUpdate += mProcessingClass_ProgressChanged;
                 mProcessingClass.ProgressReset += mProcessingClass_ProgressReset;
 
-                if (string.IsNullOrWhiteSpace(mInputFileOrDirectoryPath))
+                if (string.IsNullOrWhiteSpace(options.InputFileOrDirectoryPath))
                 {
                     ShowErrorMessage("Base file or directory to compare is empty");
                     return -1;
                 }
 
                 bool success;
-                if (string.Equals(mInputFileOrDirectoryPath, "DMS", StringComparison.OrdinalIgnoreCase) &&
-                    mComparisonFileOrDirectoryPath.IndexOf("\\", StringComparison.Ordinal) < 0)
+                if (string.Equals(options.InputFileOrDirectoryPath, "DMS", StringComparison.OrdinalIgnoreCase) &&
+                    options.ComparisonFileOrDirectoryPath.IndexOf("\\", StringComparison.Ordinal) < 0)
                 {
                     // DMS Dataset
-                    success = mProcessingClass.ProcessDMSDataset(mComparisonFileOrDirectoryPath);
+                    success = mProcessingClass.ProcessDMSDataset(options.ComparisonFileOrDirectoryPath);
                 }
                 else
                 {
                     // Comparing two files or two directories
-                    success = mProcessingClass.ProcessFilesWildcard(mInputFileOrDirectoryPath, mComparisonFileOrDirectoryPath);
+                    success = mProcessingClass.ProcessFilesWildcard(options.InputFileOrDirectoryPath, options.ComparisonFileOrDirectoryPath);
                 }
 
                 if (success)
@@ -144,7 +146,6 @@ namespace FileComparisonSampler
                     {
                         ShowErrorMessage("Error while processing: " + mProcessingClass.GetErrorMessage());
                     }
-
                 }
 
                 return returnCode;
@@ -154,7 +155,6 @@ namespace FileComparisonSampler
                 ShowErrorMessage("Error occurred in modMain->Main: " + ex.Message);
                 return -1;
             }
-
         }
 
         static void DisplayProgressPercent(int percentComplete, bool addCarriageReturn)
@@ -174,7 +174,6 @@ namespace FileComparisonSampler
             {
                 Console.WriteLine();
             }
-
         }
 
         private static string GetAppVersion()
@@ -182,179 +181,9 @@ namespace FileComparisonSampler
             return PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppVersion(PROGRAM_DATE);
         }
 
-        private static bool SetOptionsUsingCommandLineParameters(clsParseCommandLine commandLineParser)
-        {
-            // Returns True if no problems; otherwise, returns false
-            var validParameters = new List<string>
-            {
-                "N",
-                "Bytes",
-                "KB",
-                "MB",
-                "GB",
-                "L",
-                "Log",
-                "LogFolder"
-            };
-
-            try
-            {
-                // Make sure no invalid parameters are present
-                if (commandLineParser.InvalidParametersPresent(validParameters))
-                {
-                    ShowErrorMessage("Invalid command line parameters",
-                                     (from item in commandLineParser.InvalidParameters(validParameters) select "/" + item).ToList());
-                    return false;
-                }
-
-                // Query commandLineParser to see if various parameters are present
-                if (commandLineParser.NonSwitchParameterCount < 2)
-                {
-                    ShowErrorMessage(
-                        "You must specify two files or two directories or a file match spec and a directory path or the word DMS followed by a dataset name");
-                    return false;
-                }
-
-                mInputFileOrDirectoryPath = commandLineParser.RetrieveNonSwitchParameter(0);
-                mComparisonFileOrDirectoryPath = commandLineParser.RetrieveNonSwitchParameter(1);
-
-                if (commandLineParser.RetrieveValueForParameter("N", out var value))
-                {
-                    if (int.TryParse(value, out var parsedInt))
-                        mNumberOfSamples = parsedInt;
-                    else
-                        ShowErrorMessage("Non-numeric value: /N:" + value);
-                }
-
-                var byteParams = new List<KeyValuePair<string, long>> {
-                    new KeyValuePair<string, long>("Bytes", 1),
-                    new KeyValuePair<string, long>( "KB", 1024),
-                    new KeyValuePair<string, long>("MB", 1024 * 1024),
-                    new KeyValuePair<string, long>("GB", 1024 * 1024 * 1024)
-                };
-
-                foreach (var item in byteParams)
-                {
-
-                    if (commandLineParser.RetrieveValueForParameter(item.Key, out value))
-                    {
-                        if (long.TryParse(value, out var parsedLong))
-                            mSampleSizeBytes = parsedLong * item.Value;
-                        else
-                            ShowErrorMessage(string.Format(
-                                                 "Non-numeric value: /{0}: {1}",
-                                                 item.Key, value));
-                    }
-                }
-
-                if (commandLineParser.RetrieveValueForParameter("L", out value))
-                {
-                    mLogMessagesToFile = true;
-                    if (!string.IsNullOrEmpty(value))
-                        mLogFilePath = value;
-                } else if (commandLineParser.RetrieveValueForParameter("Log", out value))
-                {
-                    mLogMessagesToFile = true;
-                    if (!string.IsNullOrEmpty(value))
-                        mLogFilePath = value;
-                }
-
-                if (commandLineParser.RetrieveValueForParameter("LogFolder", out value))
-                {
-                    mLogMessagesToFile = true;
-
-                    if (!string.IsNullOrEmpty(value))
-                        mLogDirectoryPath = value;
-
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ShowErrorMessage("Error parsing the command line parameters: " + ex.Message);
-                return false;
-            }
-        }
-
         static void ShowErrorMessage(string message)
         {
             ConsoleMsgUtils.ShowError(message);
-        }
-
-        static void ShowErrorMessage(string title, IEnumerable<string> errorMessages)
-        {
-            ConsoleMsgUtils.ShowErrors(title, errorMessages);
-        }
-
-        private static void ShowProgramHelp()
-        {
-            try
-            {
-                var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
-
-                Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                                      "This program compares two or more files (typically in separate directories) to check whether the " +
-                                      "start of the files match, the end of the files match, and selected sections inside the files also match. " +
-                                      "Useful for comparing large files without reading the entire file. " +
-                                      "Alternatively, you can provide two directory paths and the program will compare all of the files " +
-                                      "in the first directory to the identically named files in the second directory."));
-                Console.WriteLine();
-                Console.WriteLine("Program syntax 1:");
-                Console.WriteLine(" " + exeName + " FilePath1 FilePath2");
-                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
-                Console.WriteLine(" [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]");
-                Console.WriteLine(" [/L[:LogFilePath]] [/LogFolder:LogFolderPath]");
-                Console.WriteLine();
-                Console.WriteLine("Program syntax 2:");
-                Console.WriteLine(" " + exeName + " DirectoryPath1 DirectoryPath2");
-                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
-                Console.WriteLine(" [/L] [/LogFolder]");
-                Console.WriteLine();
-                Console.WriteLine("Program syntax 3:");
-                Console.WriteLine(" " + exeName + " FileMatchSpec DirectoryPathToExamine");
-                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
-                Console.WriteLine(" [/L] [/LogFolder]");
-                Console.WriteLine();
-                Console.WriteLine("Program syntax 4:");
-                Console.WriteLine(" " + exeName + " DMS DatasetNameToCheck");
-                Console.WriteLine(" [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]");
-                Console.WriteLine(" [/L] [/LogFolder]");
-                Console.WriteLine();
-                Console.WriteLine("Use Syntax 1 to compare two files; in this case the filenames cannot have wildcards");
-                Console.WriteLine("Use Syntax 2 to compare two directories (including all subdirectories)");
-                Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                                      "Use Syntax 3 to compare a set of files in one directory to identically named files in a separate directory. " +
-                                      "Use wildcards in FileMatchSpec to specify the files to examine"));
-                Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                                      "Use Syntax 4 to compare a DMS dataset's files between the storage server and the archive. " +
-                                      "The first argument must be DMS; the second argument is the Dataset Name."));
-                Console.WriteLine();
-                Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                                      "Use /N to specify the number of portions of a file to examine. " +
-                                      "The default is " + clsSampledFileComparer.DEFAULT_NUMBER_OF_SAMPLES + "; " +
-                                      "the minimum is 2, indicating the beginning and the end"));
-                Console.WriteLine();
-                Console.WriteLine(ConsoleMsgUtils.WrapParagraph(
-                                      "Use /Bytes, /KB, /MB, or /GB to indicate the number of bytes to read from each file portion; " +
-                                      "The default is " + clsSampledFileComparer.DEFAULT_SAMPLE_SIZE_KB + " KB"));
-                Console.WriteLine();
-                Console.WriteLine("Use /L to log messages to a file. Optionally specify the log folder using /LogFolder");
-                Console.WriteLine();
-                Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2013");
-                Console.WriteLine("Version: " + GetAppVersion());
-                Console.WriteLine();
-                Console.WriteLine("E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov");
-                Console.WriteLine("Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/");
-                Console.WriteLine();
-
-                ProgRunner.SleepMilliseconds(1000);
-            }
-            catch (Exception ex)
-            {
-                ShowErrorMessage("Error displaying the program syntax: " + ex.Message);
-            }
-
         }
 
         private static void mProcessingClass_ProgressChanged(string taskDescription, float percentComplete)
@@ -378,7 +207,6 @@ namespace FileComparisonSampler
                 mLastProgressReportTime = DateTime.UtcNow;
                 Console.Write(".");
             }
-
         }
 
         private static void mProcessingClass_ProgressReset()
