@@ -29,7 +29,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Error codes specialized for this class
         /// </summary>
-        public enum eFileComparerErrorCodes
+        public enum FileComparerErrorCodes
         {
             NoError = 0,
             ErrorReadingInputFile = 1,
@@ -46,9 +46,7 @@ namespace FileComparisonSampler
 
         protected string mLastParameterDisplayValues = string.Empty;
 
-        protected eFileComparerErrorCodes mLocalErrorCode;
-
-        public eFileComparerErrorCodes LocalErrorCode => mLocalErrorCode;
+        protected FileComparerErrorCodes mLocalErrorCode;
 
         #endregion
 
@@ -678,10 +676,10 @@ namespace FileComparisonSampler
             {
                 switch (mLocalErrorCode)
                 {
-                    case eFileComparerErrorCodes.NoError:
+                    case FileComparerErrorCodes.NoError:
                         errorMessage = "";
                         break;
-                    case eFileComparerErrorCodes.ErrorReadingInputFile:
+                    case FileComparerErrorCodes.ErrorReadingInputFile:
                         errorMessage = "Error reading input file";
                         break;
                     default:
@@ -701,7 +699,7 @@ namespace FileComparisonSampler
         {
             mNumberOfSamples = DEFAULT_NUMBER_OF_SAMPLES;
             mSampleSizeBytes = DEFAULT_SAMPLE_SIZE_KB * 1024;
-            mLocalErrorCode = eFileComparerErrorCodes.NoError;
+            mLocalErrorCode = FileComparerErrorCodes.NoError;
         }
 
         private bool LoadParameterFileSettings(string parameterFilePath)
@@ -848,7 +846,7 @@ namespace FileComparisonSampler
             {
                 if (resetErrorCode)
                 {
-                    SetLocalErrorCode(eFileComparerErrorCodes.NoError);
+                    SetLocalErrorCode(FileComparerErrorCodes.NoError);
                 }
 
                 Console.WriteLine();
@@ -944,16 +942,16 @@ namespace FileComparisonSampler
             }
         }
 
-        private void SetLocalErrorCode(eFileComparerErrorCodes eNewErrorCode, bool leaveExistingErrorCodeUnchanged = false)
+        private void SetLocalErrorCode(FileComparerErrorCodes eNewErrorCode, bool leaveExistingErrorCodeUnchanged = false)
         {
-            if (leaveExistingErrorCodeUnchanged && mLocalErrorCode != eFileComparerErrorCodes.NoError)
+            if (leaveExistingErrorCodeUnchanged && mLocalErrorCode != FileComparerErrorCodes.NoError)
             {
                 // An error code is already defined; do not change it
                 return;
             }
 
             mLocalErrorCode = eNewErrorCode;
-            if (eNewErrorCode == eFileComparerErrorCodes.NoError)
+            if (eNewErrorCode == FileComparerErrorCodes.NoError)
             {
                 if (ErrorCode == ProcessFilesErrorCodes.LocalizedError)
                 {
