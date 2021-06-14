@@ -31,6 +31,7 @@ namespace FileComparisonSampler
         {
             NoError = 0,
             ErrorReadingInputFile = 1,
+            // ReSharper disable once UnusedMember.Global
             UnspecifiedError = -1,
         }
 
@@ -45,6 +46,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Local error code
         /// </summary>
+        // ReSharper disable once UnusedMember.Global
         public FileComparerErrorCodes LocalErrorCode => mLocalErrorCode;
 
         /// <summary>
@@ -128,7 +130,7 @@ namespace FileComparisonSampler
         /// <param name="inputFilePathBase"></param>
         /// <param name="inputFilePathToCompare"></param>
         /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-        /// <remarks></remarks>
+        // ReSharper disable once UnusedMember.Global
         public bool CompareFiles(string inputFilePathBase, string inputFilePathToCompare)
         {
             return CompareFiles(inputFilePathBase, inputFilePathToCompare, DEFAULT_NUMBER_OF_SAMPLES, DEFAULT_SAMPLE_SIZE_KB * 1024, true);
@@ -141,7 +143,7 @@ namespace FileComparisonSampler
         /// <param name="inputFilePathToCompare"></param>
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-        /// <remarks></remarks>
+        // ReSharper disable once UnusedMember.Global
         public bool CompareFiles(string inputFilePathBase, string inputFilePathToCompare, int numberOfSamples)
         {
             return CompareFiles(inputFilePathBase, inputFilePathToCompare, numberOfSamples, DEFAULT_SAMPLE_SIZE_KB * 1024, true);
