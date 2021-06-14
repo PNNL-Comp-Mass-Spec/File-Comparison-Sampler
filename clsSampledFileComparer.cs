@@ -570,8 +570,8 @@ namespace FileComparisonSampler
                     }
                     else
                     {
-                        var subdirectoryAddon = baseFile.Directory.FullName.Substring(baseDirectory.FullName.Length + 1);
-                        comparisonFile = new FileInfo(Path.Combine(inputDirectoryPath2, subdirectoryAddon, baseFile.Name));
+                        var subdirectorySuffix = baseFile.Directory.FullName.Substring(baseDirectory.FullName.Length + 1);
+                        comparisonFile = new FileInfo(Path.Combine(inputDirectoryPath2, subdirectorySuffix, baseFile.Name));
                     }
 
                     if (!comparisonFile.Exists)

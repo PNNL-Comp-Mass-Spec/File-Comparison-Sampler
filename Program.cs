@@ -46,22 +46,21 @@ namespace FileComparisonSampler
         /// <returns>0 if no error, error code if an error</returns>
         private static int Main(string[] args)
         {
-            var progName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+            var programName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
             var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
-            var cmdLineParser = new CommandLineParser<CommandLineOptions>(progName, GetAppVersion());
+            var cmdLineParser = new CommandLineParser<CommandLineOptions>(programName, GetAppVersion())
+            {
+                ProgramInfo = "This program compares two or more files (typically in separate directories) to check whether the " +
+                              "start of the files match, the end of the files match, and selected sections inside the files also match. " +
+                              "Useful for comparing large files without reading the entire file. " +
+                              "Alternatively, you can provide two directory paths and the program will compare all of the files " +
+                              "in the first directory to the identically named files in the second directory.",
 
-            cmdLineParser.ProgramInfo =
-                "This program compares two or more files (typically in separate directories) to check whether the " +
-                "start of the files match, the end of the files match, and selected sections inside the files also match. " +
-                "Useful for comparing large files without reading the entire file. " +
-                "Alternatively, you can provide two directory paths and the program will compare all of the files " +
-                "in the first directory to the identically named files in the second directory.";
-
-            cmdLineParser.ContactInfo =
-                "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2013" +
-                Environment.NewLine + Environment.NewLine +
-                "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
-                "Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/";
+                ContactInfo = "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2013" +
+                              Environment.NewLine + Environment.NewLine +
+                              "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
+                              "Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/"
+            };
 
             cmdLineParser.UsageExamples.Add(
                 "Program syntax 1: compare two files; in this case the filenames cannot have wildcards" +
