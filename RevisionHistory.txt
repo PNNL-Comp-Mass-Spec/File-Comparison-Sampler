@@ -1,5 +1,8 @@
 File Comparison Sampler
 
+Version 1.2.7835; June 14, 2021
+	- Rename the processing class
+
 Version 1.2.6677; April 13, 2018
 	- Update to C#
 	- Add command line arguments /KB, /MB, and /GB

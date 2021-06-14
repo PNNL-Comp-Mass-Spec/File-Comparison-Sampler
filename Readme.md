@@ -7,17 +7,19 @@ without reading the entire file. Alternatively, you can provide two directory
 paths and the program will compare all of the files in the first directory to the
 identically named files in the second directory.
 
+## Installation
+
+* Download FileComparisonSampler.zip from the [Releases Page](https://github.com/PNNL-Comp-Mass-Spec/File-Comparison-Sampler/releases)
+* Extract the files
+* Run FileComparisonSampler.exe
+
 ### Continuous Integration
 
-The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
+The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts).
+However, builds are not kept there long-term.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/n4ebkr0xco519ecb?svg=true)](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler)
 
-## Installation
-
-* Download File-Comparison-Sampler.zip from [AppVeyor](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts)
-* Extract the files
-* Run FileComparisonSampler.exe
 
 ## Console Switches
 
@@ -63,10 +65,10 @@ files to examine
 Use Syntax 4 to compare a DMS dataset's files between the storage server and the
 archive. The first argument must be DMS; the second argument is the Dataset Name.
 
-Use /N to specify the number of portions of a file to examine. The default is 10;
+Use `/N` to specify the number of portions of a file to examine. The default is 10;
 the minimum is 2, indicating the beginning and the end
 
-Use /Bytes, /KB, /MB, or /GB to indicate the number of bytes to read from each
+Use `/Bytes`, `/KB`, `/MB`, or `/GB` to indicate the number of bytes to read from each
 file portion; The default is 512 KB
 
 Use `/L` to log messages to a file. Optionally specify the log directory using `/LogDirectory`
