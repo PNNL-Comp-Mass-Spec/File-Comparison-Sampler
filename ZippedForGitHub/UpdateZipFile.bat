@@ -1,0 +1,3 @@
+"C:\Program Files\7-Zip\7z.exe" a FileComparisonSampler_Program.zip ..\bin\FileComparisonSampler.exe.config ..\bin\FileComparisonSampler.xml ..\bin\FileComparisonSampler.exe ..\bin\Microsoft.Bcl.AsyncInterfaces.dll ..\bin\Npgsql.dll ..\bin\PRISM.dll ..\bin\PRISMDatabaseUtils.dll ..\bin\System.Buffers.dll ..\bin\System.Memory.dll ..\bin\System.Numerics.Vectors.dll ..\bin\System.Runtime.CompilerServices.Unsafe.dll ..\bin\System.Text.Encodings.Web.dll ..\bin\System.Text.Json.dll ..\bin\System.Threading.Channels.dll ..\bin\System.Threading.Tasks.Extensions.dll ..\bin\System.ValueTuple.dll ..\Readme.md ..\RevisionHistory.txt 
+
+pause
