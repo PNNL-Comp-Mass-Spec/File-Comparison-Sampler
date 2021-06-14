@@ -113,8 +113,8 @@ namespace FileComparisonSampler
                     LogDirectoryPath = options.LogDirectoryPath
                 };
 
-                mProcessingClass.ProgressUpdate += mProcessingClass_ProgressChanged;
-                mProcessingClass.ProgressReset += mProcessingClass_ProgressReset;
+                mProcessingClass.ProgressUpdate += ProcessingClass_ProgressChanged;
+                mProcessingClass.ProgressReset += ProcessingClass_ProgressReset;
 
                 if (string.IsNullOrWhiteSpace(options.InputFileOrDirectoryPath))
                 {
@@ -186,7 +186,7 @@ namespace FileComparisonSampler
             ConsoleMsgUtils.ShowError(message);
         }
 
-        private static void mProcessingClass_ProgressChanged(string taskDescription, float percentComplete)
+        private static void ProcessingClass_ProgressChanged(string taskDescription, float percentComplete)
         {
             const int PERCENT_REPORT_INTERVAL = 25;
             const int PROGRESS_DOT_INTERVAL_MSEC = 250;
@@ -209,7 +209,7 @@ namespace FileComparisonSampler
             }
         }
 
-        private static void mProcessingClass_ProgressReset()
+        private static void ProcessingClass_ProgressReset()
         {
             mLastProgressReportTime = DateTime.UtcNow;
             mLastProgressReportValue = 0;
