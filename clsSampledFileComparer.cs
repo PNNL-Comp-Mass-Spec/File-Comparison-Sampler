@@ -280,13 +280,11 @@ namespace FileComparisonSampler
                 return false;
             }
 
-            using (var baseFileReader = new BinaryReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            using (var comparisonFileReader = new BinaryReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-            {
-                var lastStatusTime = DateTime.UtcNow;
-                var filesMatch = CompareFileSection(baseFileReader, comparisonFileReader, out comparisonResult, -1, -1, "Full comparison", ref lastStatusTime);
-                return filesMatch;
-            }
+            using var baseFileReader = new BinaryReader(new FileStream(baseFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+            using var comparisonFileReader = new BinaryReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+
+            var lastStatusTime = DateTime.UtcNow;
+            return CompareFileSection(baseFileReader, comparisonFileReader, out comparisonResult, -1, -1, "Full comparison", ref lastStatusTime);
         }
 
         /// <summary>
