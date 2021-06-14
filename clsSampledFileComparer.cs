@@ -668,29 +668,17 @@ namespace FileComparisonSampler
         /// <returns>Error message, or empty string if no error</returns>
         public override string GetErrorMessage()
         {
-            string errorMessage;
-            if (ErrorCode == ProcessFilesErrorCodes.LocalizedError ||
-                ErrorCode == ProcessFilesErrorCodes.NoError)
+            if (ErrorCode is ProcessFilesErrorCodes.LocalizedError or ProcessFilesErrorCodes.NoError)
             {
-                switch (mLocalErrorCode)
+                return mLocalErrorCode switch
                 {
-                    case FileComparerErrorCodes.NoError:
-                        errorMessage = "";
-                        break;
-                    case FileComparerErrorCodes.ErrorReadingInputFile:
-                        errorMessage = "Error reading input file";
-                        break;
-                    default:
-                        errorMessage = "Unknown error state";
-                        break;
-                }
-            }
-            else
-            {
-                errorMessage = GetBaseClassErrorMessage();
+                    FileComparerErrorCodes.NoError => "",
+                    FileComparerErrorCodes.ErrorReadingInputFile => "Error reading input file",
+                    _ => "Unknown error state"
+                };
             }
 
-            return errorMessage;
+            return GetBaseClassErrorMessage();
         }
 
         private void InitializeLocalVariables()
@@ -780,7 +768,7 @@ namespace FileComparisonSampler
 
                 if (queryResults.Count > 0)
                 {
-                    var firstResult = queryResults.First();
+                    var firstResult = queryResults[0];
 
                     storageServerDirectoryPath = firstResult[0];
                     archiveDirectoryPath = firstResult[1];
