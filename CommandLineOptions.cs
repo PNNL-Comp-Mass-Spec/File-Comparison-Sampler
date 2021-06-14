@@ -4,7 +4,7 @@ using PRISM;
 
 namespace FileComparisonSampler
 {
-    class CommandLineOptions
+    internal class CommandLineOptions
     {
         [Option("F1", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "File or directory path (can include wildcards in certain modes; see usage examples), or 'DMS'")]
         public string InputFileOrDirectoryPath { get; set; }
@@ -80,7 +80,7 @@ namespace FileComparisonSampler
             return true;
         }
 
-        static void ShowErrorMessage(string message)
+        private static void ShowErrorMessage(string message)
         {
             ConsoleMsgUtils.ShowError(message);
         }

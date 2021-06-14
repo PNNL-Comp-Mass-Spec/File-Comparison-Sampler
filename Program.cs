@@ -24,7 +24,7 @@ namespace FileComparisonSampler
     /// <summary>
     /// Entry class for the .exe
     /// </summary>
-    class Program
+    internal static class Program
     {
         /// <summary>
         /// Program date
@@ -42,7 +42,7 @@ namespace FileComparisonSampler
         /// </summary>
         /// <param name="args"></param>
         /// <returns>0 if no error, error code if an error</returns>
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
             var progName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
             var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
@@ -157,7 +157,7 @@ namespace FileComparisonSampler
             }
         }
 
-        static void DisplayProgressPercent(int percentComplete, bool addCarriageReturn)
+        private static void DisplayProgressPercent(int percentComplete, bool addCarriageReturn)
         {
             if (addCarriageReturn)
             {
@@ -181,7 +181,7 @@ namespace FileComparisonSampler
             return PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppVersion(PROGRAM_DATE);
         }
 
-        static void ShowErrorMessage(string message)
+        private static void ShowErrorMessage(string message)
         {
             ConsoleMsgUtils.ShowError(message);
         }

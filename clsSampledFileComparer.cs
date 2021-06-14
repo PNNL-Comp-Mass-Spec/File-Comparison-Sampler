@@ -7,7 +7,7 @@ using PRISMDatabaseUtils;
 
 namespace FileComparisonSampler
 {
-    class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
+    internal class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
     {
         /// <summary>
         /// Default number of samples
