@@ -6,7 +6,7 @@ using PRISMDatabaseUtils;
 
 namespace FileComparisonSampler
 {
-    internal class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
+    internal class SampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
     {
         /// <summary>
         /// Default number of samples
@@ -93,7 +93,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Constructor
         /// </summary>
-        public clsSampledFileComparer()
+        public SampledFileComparer()
         {
             mFileDate = "June 14, 2021";
             InitializeLocalVariables();

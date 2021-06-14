@@ -43,8 +43,8 @@ namespace FileComparisonSampler
             InputFileOrDirectoryPath = string.Empty;
             ComparisonFileOrDirectoryPath = string.Empty;
             // Unused: ParameterFilePath = string.Empty;
-            NumberOfSamples = clsSampledFileComparer.DEFAULT_NUMBER_OF_SAMPLES;
-            SampleSizeKBytes = clsSampledFileComparer.DEFAULT_SAMPLE_SIZE_KB;
+            NumberOfSamples = SampledFileComparer.DEFAULT_NUMBER_OF_SAMPLES;
+            SampleSizeKBytes = SampledFileComparer.DEFAULT_SAMPLE_SIZE_KB;
             LogMessagesToFile = false;
             LogFilePath = string.Empty;
             LogDirectoryPath = string.Empty;
@@ -64,7 +64,7 @@ namespace FileComparisonSampler
                 return false;
             }
 
-            if ((SampleSizeBytes > 0 || SampleSizeMBytes > 0 || SampleSizeGBytes > 0) && SampleSizeKBytes == clsSampledFileComparer.DEFAULT_SAMPLE_SIZE_KB)
+            if ((SampleSizeBytes > 0 || SampleSizeMBytes > 0 || SampleSizeGBytes > 0) && SampleSizeKBytes == SampledFileComparer.DEFAULT_SAMPLE_SIZE_KB)
             {
                 SampleSizeKBytes = 0;
             }

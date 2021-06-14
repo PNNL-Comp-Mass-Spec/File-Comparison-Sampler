@@ -33,7 +33,7 @@ namespace FileComparisonSampler
         /// </summary>
         public const string PROGRAM_DATE = "June 14, 2021";
 
-        private static clsSampledFileComparer mProcessingClass;
+        private static SampledFileComparer mProcessingClass;
 
         private static DateTime mLastProgressReportTime;
 
@@ -104,7 +104,7 @@ namespace FileComparisonSampler
             {
                 int returnCode;
 
-                mProcessingClass = new clsSampledFileComparer
+                mProcessingClass = new SampledFileComparer
                 {
                     NumberOfSamples = options.NumberOfSamples,
                     SampleSizeBytes = options.SampleSizeBytes,

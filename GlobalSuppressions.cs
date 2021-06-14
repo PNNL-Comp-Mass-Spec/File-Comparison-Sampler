@@ -5,4 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Readability", "RCS1123:Add parentheses when necessary.", Justification = "Parentheses not needed", Scope = "member", Target = "~M:FileComparisonSampler.clsSampledFileComparer.CompareFilesSampled(System.IO.FileInfo,System.IO.FileInfo,System.String@,System.Int32,System.Int64)~System.Boolean")]
+[assembly: SuppressMessage("Readability", "RCS1123:Add parentheses when necessary.", Justification = "Parentheses not needed", Scope = "member", Target = "~M:FileComparisonSampler.SampledFileComparer.CompareFilesSampled(System.IO.FileInfo,System.IO.FileInfo,System.String@,System.Int32,System.Int64)~System.Boolean")]
