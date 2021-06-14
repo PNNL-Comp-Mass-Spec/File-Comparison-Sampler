@@ -9,8 +9,6 @@ namespace FileComparisonSampler
 {
     class clsSampledFileComparer : PRISM.FileProcessor.ProcessFilesBase
     {
-        #region "Constants and enums"
-
         /// <summary>
         /// Default number of samples
         /// </summary>
@@ -36,10 +34,6 @@ namespace FileComparisonSampler
             UnspecifiedError = -1,
         }
 
-        #endregion
-
-        #region "Classwide variables"
-
         protected int mNumberOfSamples;
 
         protected long mSampleSizeBytes;
@@ -48,9 +42,6 @@ namespace FileComparisonSampler
 
         protected FileComparerErrorCodes mLocalErrorCode;
 
-        #endregion
-
-        #region "Properties"
 
         public int NumberOfSamples
         {
@@ -79,9 +70,6 @@ namespace FileComparisonSampler
                 mSampleSizeBytes = value;
             }
         }
-
-        #endregion
-
 
         /// <summary>
         /// Constructor
