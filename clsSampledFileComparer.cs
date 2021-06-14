@@ -429,9 +429,8 @@ namespace FileComparisonSampler
             using (var comparisonFileReader =
                 new BinaryReader(new FileStream(comparisonFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
-
                 long startOffset = 0;
-                bytesExamined = bytesExamined + sampleSizeBytes;
+                bytesExamined += sampleSizeBytes;
 
                 sampleNumber++;
                 var sampleDescription = "Sample " + sampleNumber + " of " + numberOfSamples;
@@ -449,7 +448,7 @@ namespace FileComparisonSampler
                 }
                 else
                 {
-                    bytesExamined = bytesExamined + sampleSizeBytes;
+                    bytesExamined += sampleSizeBytes;
                 }
 
                 sampleNumber++;
@@ -497,7 +496,7 @@ namespace FileComparisonSampler
                         }
 
                         currentOffsetDouble += seekLengthDouble;
-                        bytesExamined = bytesExamined + sampleSizeBytes;
+                        bytesExamined += sampleSizeBytes;
                     }
                 }
             }

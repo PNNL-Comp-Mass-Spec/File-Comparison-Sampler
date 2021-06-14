@@ -199,7 +199,7 @@ namespace FileComparisonSampler
                 }
 
                 DisplayProgressPercent(mLastProgressReportValue, false);
-                mLastProgressReportValue = mLastProgressReportValue + PERCENT_REPORT_INTERVAL;
+                mLastProgressReportValue += PERCENT_REPORT_INTERVAL;
                 mLastProgressReportTime = DateTime.UtcNow;
             }
             else if (DateTime.UtcNow.Subtract(mLastProgressReportTime).TotalMilliseconds > PROGRESS_DOT_INTERVAL_MSEC)
