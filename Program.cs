@@ -68,26 +68,26 @@ namespace FileComparisonSampler
                 " " + exeName + " FilePath1 FilePath2" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
                 " [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]" + Environment.NewLine +
-                " [/L[:LogFilePath]] [/LogFolder:LogFolderPath]");
+                " [/L[:LogFilePath]] [/LogDirectory:LogDirectoryPath]");
 
             cmdLineParser.UsageExamples.Add("Program syntax 2: compare two directories (including all subdirectories)" + Environment.NewLine +
                 " " + exeName + " DirectoryPath1 DirectoryPath2" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
-                " [/L] [/LogFolder]");
+                " [/L] [/LogDirectory]");
 
             cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
                 "Program syntax 3: compare a set of files in one directory to identically named files in a separate directory. " +
                 "Use wildcards in FileMatchSpec to specify the files to examine") + Environment.NewLine +
                 " " + exeName + " FileMatchSpec DirectoryPathToExamine" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
-                " [/L] [/LogFolder]");
+                " [/L] [/LogDirectory]");
 
             cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
                 "Program syntax 4: compare a DMS dataset's files between the storage server and the archive. " +
                 "The first argument must be DMS; the second argument is the Dataset Name.") + Environment.NewLine +
                 " " + exeName + " DMS DatasetNameToCheck" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
-                " [/L] [/LogFolder]");
+                " [/L] [/LogDirectory]");
 
             var results = cmdLineParser.ParseArgs(args);
             var options = results.ParsedResults;

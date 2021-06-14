@@ -28,28 +28,28 @@ Program syntax 1:
  FileComparisonSampler.exe FilePath1 FilePath2
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
  [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]
- [/L[:LogFilePath]] [/LogFolder:LogFolderPath]
+ [/L[:LogFilePath]] [/LogDirectory:LogDirectoryPath]
 ```
 
 Program syntax 2:
 ```
  FileComparisonSampler.exe DirectoryPath1 DirectoryPath2
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
- [/L] [/LogFolder]
+ [/L] [/LogDirectory]
 ```
 
 Program syntax 3:
 ```
  FileComparisonSampler.exe FileMatchSpec DirectoryPathToExamine
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
- [/L] [/LogFolder]
+ [/L] [/LogDirectory]
 ```
 
 Program syntax 4:
 ```
  FileComparisonSampler.exe DMS DatasetNameToCheck
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
- [/L] [/LogFolder]
+ [/L] [/LogDirectory]
 ```
 
 Use Syntax 1 to compare two files; in this case the filenames cannot have wildcards
@@ -69,7 +69,7 @@ the minimum is 2, indicating the beginning and the end
 Use /Bytes, /KB, /MB, or /GB to indicate the number of bytes to read from each
 file portion; The default is 512 KB
 
-Use /L to log messages to a file. Optionally specify the log folder using /LogFolder
+Use `/L` to log messages to a file. Optionally specify the log directory using `/LogDirectory`
 
 ## Contacts
 
