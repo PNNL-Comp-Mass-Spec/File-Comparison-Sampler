@@ -8,6 +8,8 @@ namespace FileComparisonSampler
     {
         // Ignore Spelling: wildcards
 
+        // Note: if InputFile is "DMS", will treat ComparisonFile as a dataset name and will compare files on the storage server to files in the archive
+        // This feature does not yet support files in MyEMSL
 
         [Option("InputFile", "F1", ArgPosition = 1, Required = true, HelpShowsDefault = false,
             HelpText = "File or directory path (can include wildcards in certain modes; see usage examples).")]

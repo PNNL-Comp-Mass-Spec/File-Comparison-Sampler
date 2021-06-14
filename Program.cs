@@ -124,10 +124,14 @@ namespace FileComparisonSampler
                 }
 
                 bool success;
+
                 if (string.Equals(options.InputFileOrDirectoryPath, "DMS", StringComparison.OrdinalIgnoreCase) &&
                     options.ComparisonFileOrDirectoryPath.IndexOf("\\", StringComparison.Ordinal) < 0)
                 {
-                    // DMS Dataset
+                    // InputFile is "DMS"
+
+                    // Treat ComparisonFile as a dataset name and compare files on the storage server to files in the archive
+                    // This feature does not yet support files in MyEMSL
                     success = mProcessingClass.ProcessDMSDataset(options.ComparisonFileOrDirectoryPath);
                 }
                 else
