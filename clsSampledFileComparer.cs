@@ -42,7 +42,18 @@ namespace FileComparisonSampler
 
         protected FileComparerErrorCodes mLocalErrorCode;
 
+        /// <summary>
+        /// Local error code
+        /// </summary>
+        public FileComparerErrorCodes LocalErrorCode => mLocalErrorCode;
 
+        /// <summary>
+        /// Number of samples (aka number of portions of the file to examine)
+        /// </summary>
+        /// <remarks>
+        /// Default: 10
+        /// Minimum: 2 (for beginning and end)
+        /// </remarks>
         public int NumberOfSamples
         {
             get => mNumberOfSamples;
@@ -57,6 +68,13 @@ namespace FileComparisonSampler
             }
         }
 
+        /// <summary>
+        /// Sample size, in bytes
+        /// </summary>
+        /// <remarks>
+        /// Default: 512
+        /// Minimum: 64
+        /// </remarks>
         public long SampleSizeBytes
         {
             get => mSampleSizeBytes;
@@ -84,7 +102,6 @@ namespace FileComparisonSampler
         /// Convert bytes to a human-readable string
         /// </summary>
         /// <param name="bytes"></param>
-        /// <returns></returns>
         protected string BytesToHumanReadable(long bytes)
         {
             if (bytes < 10000)
@@ -138,8 +155,7 @@ namespace FileComparisonSampler
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
         /// <param name="showMessageIfMatch">When true, then reports that files matched (always reports if files do not match)</param>
-        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end)</returns>
-        /// <remarks></remarks>
+        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end) or if an error</returns>
         public bool CompareFiles(
             string inputFilePathBase,
             string inputFilePathToCompare,
@@ -255,7 +271,6 @@ namespace FileComparisonSampler
         /// <param name="comparisonFile"></param>
         /// <param name="comparisonResult">'Files Match' if the files match; otherwise user-readable description of why the files don't match</param>
         /// <returns>True if the files match; otherwise false</returns>
-        /// <remarks></remarks>
         public bool CompareFilesComplete(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult)
         {
             if (!FileLengthsMatch(baseFile, comparisonFile, out comparisonResult))
@@ -283,7 +298,6 @@ namespace FileComparisonSampler
         /// <param name="sampleDescription">Description of the current section of the file being compared</param>
         /// <param name="lastStatusTime">The last time that a status message was shown (UTC time)</param>
         /// <returns>True if the files match; otherwise false</returns>
-        /// <remarks></remarks>
         protected bool CompareFileSection(BinaryReader baseFileReader, BinaryReader comparisonFileReader, out string comparisonResult, long startOffset,
                                           long sampleSizeBytes, string sampleDescription, ref DateTime lastStatusTime)
         {
@@ -400,7 +414,6 @@ namespace FileComparisonSampler
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
         /// <returns>True if the files match; otherwise false</returns>
-        /// <remarks></remarks>
         public bool CompareFilesSampled(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult, int numberOfSamples,
                                         long sampleSizeBytes)
         {
@@ -507,7 +520,6 @@ namespace FileComparisonSampler
         /// <param name="numberOfSamples">Number of samples; minimum 2 (for beginning and end)</param>
         /// <param name="sampleSizeBytes">Bytes to compare for each sample (minimum 64 bytes)</param>
         /// <returns>True if the directories Match; false if they do not match</returns>
-        /// <remarks></remarks>
         public bool CompareDirectories(string inputDirectoryPath1, string inputDirectoryPath2, int numberOfSamples, long sampleSizeBytes)
         {
             var sourceFilesFound = 0;
@@ -624,7 +636,7 @@ namespace FileComparisonSampler
         /// <param name="baseFile"></param>
         /// <param name="comparisonFile"></param>
         /// <param name="comparisonResult"></param>
-        /// <returns>Trueif the sizes match, otherwise false</returns>
+        /// <returns>True if the sizes match, otherwise false</returns>
         public bool FileLengthsMatch(FileInfo baseFile, FileInfo comparisonFile, out string comparisonResult)
         {
             if (!baseFile.Exists)
@@ -826,7 +838,7 @@ namespace FileComparisonSampler
         /// <param name="outputDirectoryPath">File or directory to compare to inputFilePath</param>
         /// <param name="parameterFilePath">Parameter file path (unused)</param>
         /// <param name="resetErrorCode"></param>
-        /// <returns></returns>
+        /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end) or if an error</returns>
         /// <remarks>If inputFilePath is a file but outputDirectoryPath is a directory, looks for a file named inputFilePath in directory outputDirectoryPath</remarks>
         public override bool ProcessFile(string inputFilePath, string outputDirectoryPath, string parameterFilePath, bool resetErrorCode)
         {
