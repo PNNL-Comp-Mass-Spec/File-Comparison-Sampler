@@ -95,7 +95,7 @@ namespace FileComparisonSampler
         /// </summary>
         public clsSampledFileComparer()
         {
-            mFileDate = "April 13, 2018";
+            mFileDate = "June 14, 2021";
             InitializeLocalVariables();
         }
 
@@ -757,7 +757,6 @@ namespace FileComparisonSampler
 
                 var dbTools = DbToolsFactory.GetDBTools(connectionString);
 
-
                 var sqlQuery = "SELECT Dataset_Folder_Path, Archive_Folder_Path " +
                                "FROM V_Dataset_Folder_Paths " +
                                "WHERE (Dataset = '" + datasetName + "')";
@@ -913,7 +912,6 @@ namespace FileComparisonSampler
                         }
 
                         comparisonFilePath = comparisonFile.FullName;
-
                     }
 
                     ShowParameters();
@@ -943,7 +941,6 @@ namespace FileComparisonSampler
                 {
                     SetBaseClassErrorCode(ProcessFilesErrorCodes.NoError);
                 }
-
             }
             else
             {

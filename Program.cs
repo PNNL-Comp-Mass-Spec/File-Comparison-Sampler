@@ -31,7 +31,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "February 24, 2020";
+        public const string PROGRAM_DATE = "June 14, 2021";
 
         private static clsSampledFileComparer mProcessingClass;
 
