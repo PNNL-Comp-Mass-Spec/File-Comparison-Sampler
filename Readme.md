@@ -31,6 +31,7 @@ Program syntax 1:
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
  [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]
  [/L[:LogFilePath]] [/LogDirectory:LogDirectoryPath]
+ [/ParamFile] [/CreateParamFile]
 ```
 
 Program syntax 2:
@@ -38,6 +39,7 @@ Program syntax 2:
  FileComparisonSampler.exe DirectoryPath1 DirectoryPath2
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
  [/L] [/LogDirectory]
+ [/ParamFile] [/CreateParamFile]
 ```
 
 Program syntax 3:
@@ -45,6 +47,7 @@ Program syntax 3:
  FileComparisonSampler.exe FileMatchSpec DirectoryPathToExamine
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
  [/L] [/LogDirectory]
+ [/ParamFile] [/CreateParamFile]
 ```
 
 Program syntax 4:
@@ -52,6 +55,7 @@ Program syntax 4:
  FileComparisonSampler.exe DMS DatasetNameToCheck
  [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]
  [/L] [/LogDirectory]
+ [/ParamFile] [/CreateParamFile]
 ```
 
 Use Syntax 1 to compare two files; in this case the filenames cannot have wildcards
@@ -72,6 +76,16 @@ Use `/Bytes`, `/KB`, `/MB`, or `/GB` to indicate the number of bytes to read fro
 file portion; The default is 512 KB
 
 Use `/L` to log messages to a file. Optionally specify the log directory using `/LogDirectory`
+
+Use `/ParamFile` to specify a file containing program parameters. 
+Additional arguments on the command line can supplement or override 
+the arguments in the param file. Lines starting with '#' or ';' 
+will be treated as comments; blank lines are ignored. Lines that 
+start with text that does not match a parameter will also be ignored.
+
+Use `/CreateParamFile` to create an example parameter file. 
+Optionally specify a filename; if not specified, the example 
+parameter file content will output to the console.
 
 ## Contacts
 
