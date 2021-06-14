@@ -6,6 +6,8 @@ namespace FileComparisonSampler
 {
     internal class CommandLineOptions
     {
+        // Ignore Spelling: wildcards
+
         [Option("F1", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "File or directory path (can include wildcards in certain modes; see usage examples), or 'DMS'")]
         public string InputFileOrDirectoryPath { get; set; }
 

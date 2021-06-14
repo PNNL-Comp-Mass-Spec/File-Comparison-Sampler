@@ -26,6 +26,8 @@ namespace FileComparisonSampler
     /// </summary>
     internal static class Program
     {
+        // Ignore Spelling: wildcards
+
         /// <summary>
         /// Program date
         /// </summary>
