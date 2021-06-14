@@ -8,35 +8,47 @@ namespace FileComparisonSampler
     {
         // Ignore Spelling: wildcards
 
-        [Option("F1", ArgPosition = 1, Required = true, HelpShowsDefault = false, HelpText = "File or directory path (can include wildcards in certain modes; see usage examples), or 'DMS'")]
+        [Option("F1", ArgPosition = 1, Required = true, HelpShowsDefault = false,
+            HelpText = "File or directory path (can include wildcards in certain modes; see usage examples), or 'DMS'")]
         public string InputFileOrDirectoryPath { get; set; }
 
-        [Option("F2", ArgPosition = 2, Required = true, HelpShowsDefault = false, HelpText = "File or directory path, or dataset name (see usage examples)")]
+        [Option("F2", ArgPosition = 2, Required = true, HelpShowsDefault = false,
+            HelpText = "File or directory path, or dataset name (see usage examples)")]
         public string ComparisonFileOrDirectoryPath { get; set; }
 
         public bool LogMessagesToFile { get; set; }
 
-        [Option("L", "Log", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false, HelpText = "Log messages to a file. Can provide a file path.")]
+        [Option("L", "Log", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
+            HelpText = "Log messages to a file. Can provide a file path.")]
         public string LogFilePath { get; set; }
 
-        [Option("LogDir", "LogFolder", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false, HelpText = "The directory where the log file should be written")]
+        [Option("LogDir", "LogFolder", "LogDirectory", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
+            HelpText = "The directory where the log file should be written")]
         public string LogDirectoryPath { get; set; }
 
-        [Option("N", HelpShowsDefault = false, HelpText = "The number of portions of a file to examine. The minimum is 2, indicating the beginning and the end", Min = 2)]
+        [Option("N", HelpShowsDefault = false,
+            HelpText = "The number of portions of a file to examine. The minimum is 2, indicating the beginning and the end", Min = 2)]
         public int NumberOfSamples { get; set; }
 
-        [Option("Bytes", HelpShowsDefault = false, HelpText = "The number of bytes to read from each file portion. Largest byte value is used.")]
+        [Option("Bytes", HelpShowsDefault = false,
+            HelpText = "The number of bytes to read from each file portion. Largest byte value is used.")]
         public long SampleSizeBytes { get; set; }
 
-        [Option("KB", HelpText = "The number of kilobytes to read from each file portion. Largest byte value is used.")]
+        [Option("KB",
+            HelpText = "The number of kilobytes to read from each file portion. Largest byte value is used.")]
         public long SampleSizeKBytes { get; set; }
 
-        [Option("MB", HelpShowsDefault = false, HelpText = "The number of megabytes to read from each file portion. Largest byte value is used.")]
+        [Option("MB", HelpShowsDefault = false,
+            HelpText = "The number of megabytes to read from each file portion. Largest byte value is used.")]
         public long SampleSizeMBytes { get; set; }
 
-        [Option("GB", HelpShowsDefault = false, HelpText = "The number of gigabytes to read from each file portion. Largest byte value is used.")]
+        [Option("GB", HelpShowsDefault = false,
+            HelpText = "The number of gigabytes to read from each file portion. Largest byte value is used.")]
         public long SampleSizeGBytes { get; set; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public CommandLineOptions()
         {
             // Initialize the options
