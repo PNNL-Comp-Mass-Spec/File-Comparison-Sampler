@@ -8,25 +8,26 @@ namespace FileComparisonSampler
     {
         // Ignore Spelling: wildcards
 
-        [Option("F1", ArgPosition = 1, Required = true, HelpShowsDefault = false,
-            HelpText = "File or directory path (can include wildcards in certain modes; see usage examples), or 'DMS'")]
+
+        [Option("InputFile", "F1", ArgPosition = 1, Required = true, HelpShowsDefault = false,
+            HelpText = "File or directory path (can include wildcards in certain modes; see usage examples).")]
         public string InputFileOrDirectoryPath { get; set; }
 
-        [Option("F2", ArgPosition = 2, Required = true, HelpShowsDefault = false,
+        [Option("ComparisonFile", "F2", ArgPosition = 2, Required = true, HelpShowsDefault = false,
             HelpText = "File or directory path, or dataset name (see usage examples)")]
         public string ComparisonFileOrDirectoryPath { get; set; }
 
         public bool LogMessagesToFile { get; set; }
 
-        [Option("L", "Log", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
+        [Option("Log", "L", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
             HelpText = "Log messages to a file. Can provide a file path.")]
         public string LogFilePath { get; set; }
 
-        [Option("LogDir", "LogFolder", "LogDirectory", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
+        [Option("LogDirectory", "LogDir", "LogFolder", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false,
             HelpText = "The directory where the log file should be written")]
         public string LogDirectoryPath { get; set; }
 
-        [Option("N", HelpShowsDefault = false,
+        [Option("Samples", "N", HelpShowsDefault = false,
             HelpText = "The number of portions of a file to examine. The minimum is 2, indicating the beginning and the end", Min = 2)]
         public int NumberOfSamples { get; set; }
 
