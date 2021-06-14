@@ -16,7 +16,7 @@ namespace FileComparisonSampler
 
         public bool LogMessagesToFile { get; set; }
 
-        [Option("L", "Log", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false, HelpText = "Log messages to a file. Can provide a filepath.")]
+        [Option("L", "Log", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false, HelpText = "Log messages to a file. Can provide a file path.")]
         public string LogFilePath { get; set; }
 
         [Option("LogDir", "LogFolder", ArgExistsProperty = nameof(LogMessagesToFile), HelpShowsDefault = false, HelpText = "The directory where the log file should be written")]
