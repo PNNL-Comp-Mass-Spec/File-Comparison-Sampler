@@ -15,9 +15,8 @@ identically named files in the second directory.
 
 ### Continuous Integration
 
-The latest version of the application is available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts).
-However, builds are not kept there long-term.
-
+The latest version of the application may be available on the [AppVeyor CI server](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler/build/artifacts), 
+but builds are deleted after 6 months. \
 [![Build status](https://ci.appveyor.com/api/projects/status/n4ebkr0xco519ecb?svg=true)](https://ci.appveyor.com/project/PNNLCompMassSpec/file-comparison-sampler)
 
 
@@ -91,7 +90,7 @@ parameter file content will output to the console.
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
 E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
-Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov
+Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics
 
 ## License
 
