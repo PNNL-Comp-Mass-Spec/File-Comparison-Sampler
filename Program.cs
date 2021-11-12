@@ -31,7 +31,7 @@ namespace FileComparisonSampler
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "June 14, 2021";
+        public const string PROGRAM_DATE = "November 12, 2021";
 
         private static SampledFileComparer mProcessingClass;
 
@@ -48,7 +48,8 @@ namespace FileComparisonSampler
         {
             var programName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
             var exeName = Path.GetFileName(PRISM.FileProcessor.ProcessFilesOrDirectoriesBase.GetAppPath());
-            var cmdLineParser = new CommandLineParser<CommandLineOptions>(programName, GetAppVersion())
+
+            var parser = new CommandLineParser<CommandLineOptions>(programName, GetAppVersion())
             {
                 ProgramInfo = "This program compares two or more files (typically in separate directories) to check whether the " +
                               "start of the files match, the end of the files match, and selected sections inside the files also match. " +
@@ -56,13 +57,13 @@ namespace FileComparisonSampler
                               "Alternatively, you can provide two directory paths and the program will compare all of the files " +
                               "in the first directory to the identically named files in the second directory.",
 
-                ContactInfo = "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2013" +
+                ContactInfo = "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)" +
                               Environment.NewLine + Environment.NewLine +
                               "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
                               "Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics"
             };
 
-            cmdLineParser.UsageExamples.Add(
+            parser.UsageExamples.Add(
                 "Program syntax 1: compare two files; in this case the filenames cannot have wildcards" +
                 Environment.NewLine +
                 " " + exeName + " FilePath1 FilePath2" + Environment.NewLine +
@@ -70,32 +71,36 @@ namespace FileComparisonSampler
                 " [/KB:SizeKB] [/MB:SizeMB] [/GB:SizeGB]" + Environment.NewLine +
                 " [/L[:LogFilePath]] [/LogDirectory:LogDirectoryPath]");
 
-            cmdLineParser.UsageExamples.Add("Program syntax 2: compare two directories (including all subdirectories)" + Environment.NewLine +
+            parser.UsageExamples.Add("Program syntax 2: compare two directories (including all subdirectories)" + Environment.NewLine +
                 " " + exeName + " DirectoryPath1 DirectoryPath2" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
                 " [/L] [/LogDirectory]");
 
-            cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
+            parser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
                 "Program syntax 3: compare a set of files in one directory to identically named files in a separate directory. " +
                 "Use wildcards in FileMatchSpec to specify the files to examine") + Environment.NewLine +
                 " " + exeName + " FileMatchSpec DirectoryPathToExamine" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
                 " [/L] [/LogDirectory]");
 
-            cmdLineParser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
+            parser.UsageExamples.Add(ConsoleMsgUtils.WrapParagraph(
                 "Program syntax 4: compare a DMS dataset's files between the storage server and the archive. " +
                 "The first argument must be DMS; the second argument is the Dataset Name.") + Environment.NewLine +
                 " " + exeName + " DMS DatasetNameToCheck" + Environment.NewLine +
                 " [/N:NumberOfSamples] [/Bytes:SampleSizeBytes]" + Environment.NewLine +
                 " [/L] [/LogDirectory]");
 
-            var results = cmdLineParser.ParseArgs(args);
-            var options = results.ParsedResults;
+            var result = parser.ParseArgs(args);
+            var options = result.ParsedResults;
 
-            if (!results.Success || !options.Validate())
+            if (!result.Success || !options.Validate())
             {
-                //ShowErrorMessage(
-                //    "You must specify two files or two directories or a file match spec and a directory path or the word DMS followed by a dataset name");
+                if (parser.CreateParamFileProvided)
+                {
+                    return 0;
+                }
+
+                // Delay for 1000 msec in case the user double clicked this file from within Windows Explorer (or started the program via a shortcut)
                 ProgRunner.SleepMilliseconds(1000);
                 return -1;
             }
