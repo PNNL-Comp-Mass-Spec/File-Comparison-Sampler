@@ -819,12 +819,12 @@ namespace FileComparisonSampler
         /// <summary>
         /// Compares the two specified files or two specified directories
         /// </summary>
+        /// <remarks>If inputFilePath is a file but outputDirectoryPath is a directory, looks for a file named inputFilePath in directory outputDirectoryPath</remarks>
         /// <param name="inputFilePath">Base file or directory to read</param>
         /// <param name="outputDirectoryPath">File or directory to compare to inputFilePath</param>
         /// <param name="parameterFilePath">Parameter file path (unused)</param>
         /// <param name="resetErrorCode"></param>
         /// <returns>True if they Match; false if they do not match (same length, same beginning, same middle, and same end) or if an error</returns>
-        /// <remarks>If inputFilePath is a file but outputDirectoryPath is a directory, looks for a file named inputFilePath in directory outputDirectoryPath</remarks>
         public override bool ProcessFile(string inputFilePath, string outputDirectoryPath, string parameterFilePath, bool resetErrorCode)
         {
             try
